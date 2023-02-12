@@ -158,6 +158,28 @@ beanFactory的排序：
 
 ![image-20230212225841324](spring原理-photos/image-20230212225841324.png)
 
+
+
+#### 模板设计模式：固定不变的内容+接口调用称为了模板[变化的内容单独封装为接口]；模板方法不需修改，改业务代码即可；
+
+![image-20230212232225441](spring原理-photos/image-20230212232225441.png)
+
+![image-20230212232233475](spring原理-photos/image-20230212232233475.png)
+
+![image-20230212232156415](spring原理-photos/image-20230212232156415.png)
+
+### 第四章
+
+#### 常见的Bean后处理器//变量注入放在方法里面可以打印； Resolver是为了解析@Value值注入；//掌握下每个后处理器 能解析哪几个注解
+
+![image-20230212234621913](spring原理-photos/image-20230212234621913.png)
+
+![image-20230212234601021](spring原理-photos/image-20230212234601021.png)
+
+
+
+
+
 Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定；
 
 
