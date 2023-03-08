@@ -189,21 +189,21 @@ Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配�
 
 
 
-P30
+
 
 一个单例的bean注入其他scope的bean会有问题，需要加一个Lazy注解。
 
-#### 单例注入多例，scope会失效（本质上都是获取多例的时候多一层）；
+#### 单例注入多例，scope会失效（解决方案本质上都是获取多例的时候多一层） E（单例）有属性发（多例）；
 
 ![image-20230305135529245](spring原理mac.assets/image-20230305135529245.png)
 
 - 添加@Lazy解决  
 
-代理类是原F1的子类；
+  - 代理类是原F1的子类，代理对象使用f的方法时 可以控制注入新的f对象；
 
 ![image-20230305135609810](spring原理mac.assets/image-20230305135609810.png)
 
-- 添加配置，也是生成代理
+- 要注入的多例对象上添加配置，也是生成代理
 
 ![image-20230305140022017](spring原理mac.assets/image-20230305140022017.png)
 
@@ -308,9 +308,29 @@ pom.xml中添加插件：
 
 #### jdk代理字节码生成
 
-- jdk代理没有源码，直接生成字节码，用的asm[spring jdk使用很多]
+- jdk代理没有源码，运行期间动态生成字节码，用的asm[spring jdk使用很多]
 - 安装idea插件 java源码转换为asm代码，然后可以转换为字节码；但不能很好地在高版本的jdk里面工作；
   - ![image-20230305165206211](spring原理mac.assets/image-20230305165206211.png)
 - 编写一个代理类的代码
   - ![image-20230305165934972](spring原理mac.assets/image-20230305165934972.png)
-  - 编译， 右键-- show Bytecode outline，会转换为ASMified  即asm代码；需要导下包，spring的包即可；
+  - 编译， 右键-- show Bytecode outline，会转换为ASMified  即asm代码；拷贝代码、粘贴；需要导下包，导入spring的包即可；
+  - ClassWriter类调用生成字节码；cw.visit 就是生成一个代理对象（@Lazy就是做这个事情）；定义类的成员变量、方法;  cw.toByteArray（）得到的数组就是Class字节码； 例如：把byte数组写进ckass文件；
+  - ![image-20230308223140701](spring原理mac-photos/image-20230308223140701.png)
+  - 直接在内存中使用字节码，defineClass依据字节数组生成类对象；  入参：类名、字节数组、字节数组起始为位置、长度；依据类对象可以创建对象；   
+  - ![image-20230308223951386](spring原理mac-photos/image-20230308223951386.png)
+  - ![image-20230308224058618](spring原理mac-photos/image-20230308224058618.png)
+  - 具体字节码的生成要看asm的api，还要熟悉jvm的指令，成本有点高；
+
+#### jdk反射优化//反射调用一般效率较低
+
+- method.invoke本质上是通过methodAccessor实现类实现；
+- 前16次用本地的java native api MethodAccessor，性能低；第17次  换了实现类反射，提高了性能；
+- ![image-20230308225422323](spring原理mac-photos/image-20230308225422323.png)
+- ![image-20230308225547930](spring原理mac-photos/image-20230308225547930.png)
+
+- Arthas查看得知，第17次直接直接正常调用，为了优化反射调用  直接生成了 代理类，就可以直接调用
+  - ![image-20230308225402202](spring原理mac-photos/image-20230308225402202.png)
+
+​			
+
+P41
