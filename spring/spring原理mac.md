@@ -10,6 +10,7 @@ https://www.bilibili.com/video/BV1P44y1N7QG/?vd_source=8bd5ab544d4cb8d9821752b68
 
 - jdk代理的原理？如何自己实现代理？Cglib?? 代理的模拟实现自己手写下？？
 - 想体验下微软的面试？看下人家和我之间的差距？
+- 我一直在想，为什么cglib jdk代理要直接生成字节码？因为直接生成字节码才能避免反射调用吗？或者直接生成java类定义也是可以的；  ==所以代理的精华在于自动生成class定义/对应class的字节码？估计是先生成class再编译比较麻烦，因为要检测到哪里有自动生成定义的代码，所以干脆直接生成字节码==
 
 看源码技巧
 
@@ -333,4 +334,59 @@ pom.xml中添加插件：
 
 ​			
 
-P41
+#### cglib代理
+
+![image-20230319142730188](spring原理mac.assets/image-20230319142730188.png)
+
+- 继承父类
+
+- ==MehodInterceptor.intercept 入参: 代理类对象   当前正在执行的方法   方法实参数组 **mehtodProxy[后面有说明]**==
+- jdk和cglib的区别：jdk第17次有优化，针对一个方法产生一个代理类， 反射调用-->直接调用；cglib第一次调用就会产生代理，无需反射调用，一个代理类对应两个FastClass[对应代理对象 和目标对象 ，可能有些场景目标对象比代理对象多了一些功能吧，所以有两种用法？]，每个FastClass类里面可以匹配多个方法，相比jdk生成代理类数量少一些；
+
+![image-20230319143141053](spring原理mac.assets/image-20230319143141053.png)
+
+![image-20230319143558529](spring原理mac.assets/image-20230319143558529.png)
+
+![image-20230319143626105](spring原理mac.assets/image-20230319143626105.png)
+
+![image-20230319143813939](spring原理mac.assets/image-20230319143813939.png)
+
+- ==MehtodProxy.create的五个参数：目标类型  代理类型 “参数、返回类型”  带增强功能的方法名 带原始功能的方法名;==//()V表示入参为空，返回值为void; ()表示入参为int 返回值 void
+- ![image-20230319150416493](spring原理mac.assets/image-20230319150416493.png)
+
+![image-20230319145038369](spring原理mac.assets/image-20230319145038369.png)
+
+![image-20230319150845297](spring原理mac.assets/image-20230319150845297.png)
+
+- methdoProxy避免反射调用的原理，使用了FastClass; FastClass也是直接生成字节码，没有Java的源码；==核心的两个方法 getIndex[方法签名转换为整数编号] invoke[依据整数编号调用对用的方法]==； Proxy方法中初始化代码，调用create方法的时候会生成targetClass代理对象；
+- methodProxy.invoke(target, args)模拟实现；结合目标对象使用的class
+  - ![image-20230319151421709](spring原理mac.assets/image-20230319151421709.png)
+  - ![image-20230319155548583](spring原理mac.assets/image-20230319155548583.png)
+  - ![image-20230319155732395](spring原理mac.assets/image-20230319155732395.png)
+  - ![image-20230319160219530](spring原理mac.assets/image-20230319160219530.png)
+  - ![image-20230319161820487](spring原理mac.assets/image-20230319161820487.png)
+- methodProxy.invoke()    结合代理对象使用
+  - 注意：调的是代理类的原始功能方法  因为使用methodProxy代理之前已经进行过增强了；
+  - ![image-20230319162337876](spring原理mac.assets/image-20230319162337876.png)
+  - ![image-20230319162908632](spring原理mac.assets/image-20230319162908632.png)
+  - ![image-20230319162954823](spring原理mac.assets/image-20230319162954823.png)
+
+#### spring选择代理
+
+**切面：通知+切点**； advisor包含一个通知和切点；
+
+- ![image-20230319164309395](spring原理mac.assets/image-20230319164309395.png)
+
+模拟实现切面
+
+- org.springframework.aop.Pointcut
+
+- ![image-20230319164910490](spring原理mac.assets/image-20230319164910490.png)
+- org.aopalliance.intercept.MethodInterceptor
+- ![image-20230319165552181](spring原理mac.assets/image-20230319165552181.png)
+- ![image-20230319165937659](spring原理mac.assets/image-20230319165937659.png)
+- ProxyFactory会依据具体情况选择 cglib或者jdk增强
+
+P47
+
+ 
