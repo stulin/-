@@ -382,11 +382,42 @@ pom.xml中添加插件：
 - org.springframework.aop.Pointcut
 
 - ![image-20230319164910490](spring原理mac.assets/image-20230319164910490.png)
+
 - org.aopalliance.intercept.MethodInterceptor
+
 - ![image-20230319165552181](spring原理mac.assets/image-20230319165552181.png)
+
 - ![image-20230319165937659](spring原理mac.assets/image-20230319165937659.png)
+
 - ProxyFactory会依据具体情况选择 cglib或者jdk增强
 
-P47
+  - ![image-20230322220034855](spring原理mac-photos/image-20230322220034855.png)
+  - ![image-20230322220228401](spring原理mac-photos/image-20230322220228401.png)
 
- 
+  
+
+#### 16讲 切点匹配
+
+- execution(返回值  包名-类名-方法名 )
+
+- @annotation(注解的 包名-类名)
+
+- ![image-20230322221158226](spring原理mac-photos/image-20230322221158226.png)
+- @Transactional  可加方法、类[所有方法]、接口[实现该接口的类的所有的接口中的方法]；
+
+- MergeAnnotaions可以获取方法  类上的注解信息；默认只差一层，即仅本类，不会搜父类 接口，设置为SearchStrategy.TYPE_HIERARCHY
+  - ![image-20230322223204543](spring原理mac-photos/image-20230322223204543.png)
+
+- ![image-20230322223228071](spring原理mac-photos/image-20230322223228071.png)
+
+#### 17讲 从@Apect到Advisor
+
+- 
+- ![image-20230322224530882](spring原理mac-photos/image-20230322224530882.png)
+- 转换为lamda快捷键？？？
+- ![image-20230322224829058](spring原理mac-photos/image-20230322224829058.png)
+- GenericApplicationContext是一个干净的容器；注册配置类  ConfigurationClassPostProcessor后处理器解析配置类内部的@Bean注解
+
+- ![image-20230322225053015](spring原理mac-photos/image-20230322225053015.png)
+
+P51
