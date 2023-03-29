@@ -420,4 +420,31 @@ pom.xml中添加插件：
 
 - ![image-20230322225053015](spring原理mac-photos/image-20230322225053015.png)
 
-P51
+
+
+#### 第17讲 findEligibleAdvisors
+
+bean处理器，一  找到所有的切面，包括高级切面Aspect和低级切面Advisor；二  依据切面创建代理对象；
+
+AnnotationAwareAspectJAutoProxyCreator.class
+
+findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看切点是否和目标类匹配]，bean在容器的名字
+
+wrapIfNecessary:是否有必要创建代理
+
+- ![image-20230329214318042](spring原理mac-photos/image-20230329214318042.png)
+- ![image-20230329214751813](spring原理mac-photos/image-20230329214751813.png)
+-   ![image-20230329215404758](spring原理mac-photos/image-20230329215404758.png)
+
+#### 第17讲 代理创建时机
+
+//通常是 创建之后  或者 初始化之后 二选一；//==我看后续的视频似乎是还有 依赖注入和初始化之间创建代理????应该理解为之前，如bean2依赖bean1，注入bean1之前会创建代理对象==
+
+- ![image-20230329222446471](spring原理mac-photos/image-20230329222446471.png)
+- ![image-20230329221344788](spring原理mac-photos/image-20230329221344788.png)
+- ![image-20230329221457507](spring原理mac-photos/image-20230329221457507.png)
+- ![image-20230329221649561](spring原理mac-photos/image-20230329221649561.png)
+- ![image-20230329221945241](spring原理mac-photos/image-20230329221945241.png)
+- 循环依赖的情况，bean1的代理对象在bean1的构造--bean1的初始化之间被创建，因为依赖注入需要  代理对象被提前创建；
+- ![image-20230329222321324](spring原理mac-photos/image-20230329222321324.png)
+
