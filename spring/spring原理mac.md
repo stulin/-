@@ -465,4 +465,32 @@ wrapIfNecessary:是否有必要创建代理
 - ![image-20230331190751095](spring原理mac-photos/image-20230331190751095.png)
 - ![image-20230331190922746](spring原理mac-photos/image-20230331190922746.png)
 
-P56
+### 第18讲 静态通知调用
+
+#### 不同通知同意转换为环绕通知，适配器模式体现
+
+- ![image-20230401145634031](spring原理mac-photos/image-20230401145634031.png)
+- 最后的效果是想达到下述的 套娃的效果，由外到内进，由内到外出；
+- ![image-20230401145543139](spring原理mac-photos/image-20230401145543139.png)
+- getInterceptorsAndDynamicInterceptionAdvice会把不同通知转换成环绕通知
+- ![image-20230401150606788](spring原理mac-photos/image-20230401150606788.png)
+-  适配器模式：把一套接口转换成另一套接口，以便适合某种场景的调用
+- ![image-20230401152121979](spring原理mac-photos/image-20230401152121979.png)
+- 创建并执行调用链；proceed（）调用所有的环绕通知和目标；还需要准备好methodInvocation，可以最外层环绕通知实现放入当前线程（addAvice(ExposeInvocationInterceptor.INSTANCE)）；
+- ![image-20230401161906834](spring原理mac-photos/image-20230401161906834.png)
+- ![image-20230401162201172](spring原理mac-photos/image-20230401162201172.png)
+- ![image-20230401162211740](spring原理mac-photos/image-20230401162211740.png)
+- ![image-20230401162226966](spring原理mac-photos/image-20230401162226966.png)
+
+
+
+#### 无参数绑定通知链执行过程，责任链模式体现 
+
+#### 模拟实现MethodInvocation
+
+- 本质就是一个递归调用；
+- 责任链模式：链对应调用链，元素对应 通知类；
+- ![image-20230401170127067](spring原理mac-photos/image-20230401170127067.png)
+- ![image-20230401170144096](spring原理mac-photos/image-20230401170144096.png)
+- ![image-20230401170152734](spring原理mac-photos/image-20230401170152734.png)
+
