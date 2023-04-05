@@ -494,3 +494,76 @@ wrapIfNecessary:是否有必要创建代理
 - ![image-20230401170144096](spring原理mac-photos/image-20230401170144096.png)
 - ![image-20230401170152734](spring原理mac-photos/image-20230401170152734.png)
 
+### 第十九讲 动态通知调用
+
+#### 参数绑定通知链执行过程
+
+![image-20230405095105582](spring原理mac-photos/image-20230405095105582.png)
+
+- proxyCreator()用于将高级切面转为低级切面，同时创建代理对象；
+  -  ![image-20230405101001361](spring原理mac-photos/image-20230405101001361.png)
+- 测试类代码，interceptorList则是所有通知转换后的环绕通知；最外层的ExposeInvocationInterceptor为其它通知准备好methodInvocatin对象；带参数的切面，最后得到的是InterceptorAndDynamicMethodMatcher对象（内部含切点属性、通知属性）
+  - ![image-20230405101150137](spring原理mac-photos/image-20230405101150137.png)
+  - ![image-20230405101905348](spring原理mac-photos/image-20230405101905348.png)
+- ![image-20230405102240033](spring原理mac-photos/image-20230405102240033.png)
+- ![image-20230405102348242](spring原理mac-photos/image-20230405102348242.png)
+
+- 注意，上面的invocation使用了一个语法：new 一个匿名子类，为的是调用受保护的构造；
+
+### 第二十讲：RequestMappingHandlerMapping与RequestMappingHandlerAdapter
+
+#### diapatcherServlet初始化
+
+- AnnotationConfig指支持java配置类方式构建容器；ServletWebServer支持内嵌 web容器（如内嵌tomcat）；
+- @ComponentScan默认范围：自己类所在的包及子包；
+- 工厂方法的参数支持按类型匹配，接近依赖注入；
+- 不和其它servlet路径匹配，默认和/匹配
+  - ![image-20230405105013453](spring原理mac-photos/image-20230405105013453.png)
+
+- dispatcherServlet是spring容器创建；但是初始化 ：tomcat容器默认在首次使用dispatcherServlet的时候初始化（走的是servlet的初始化流程）； 如果希望在启动tomcat的时候初始化dipatcherServlet，可以设置loadOnStartup，大于0便会在启动是初始化，具体数值表示多个servlet时的优先级；
+  - ![image-20230405110150278](spring原理mac-photos/image-20230405110150278.png)
+  - 配置属性可以在配置文件中设置 @PropertySource；ServerPropertires会打包读取配置类中server打头的key
+  - ![image-20230405110509882](spring原理mac-photos/image-20230405110509882.png)
+  - ![image-20230405110902514](spring原理mac-photos/image-20230405110902514.png)
+  - ![image-20230405111145774](spring原理mac-photos/image-20230405111145774.png)
+  - ![image-20230405111229135](spring原理mac-photos/image-20230405111229135.png)
+
+#### diapatcherServlet初始化内容
+
+- onRefresh-->initStrategies，会初始化下面的九个组件；
+  - ![image-20230405112543985](spring原理mac-photos/image-20230405112543985.png)
+  - initMultipartResolver：文件上传成解析器
+  - initLocaleResolver：本地化解析器，属于哪一种国家、地区、语言；//有多种实现：accept cookie
+  - initThemeResolver：不重要
+  - initHandlerMappings  路径映射器，请求下方到controller；
+  - initHandlerAdapters   handler：具体处理请求的代码，有多种形式；适配 不同形式的适配器方法，并调用它；
+  - initHandlerExceptionResolvers   解析异常
+  - 后面三个不重要
+
+- initHandlerMappings代码阅读
+  - ![image-20230405113052468](spring原理mac-photos/image-20230405113052468.png)
+  - 找到所有的HandlerMapping（detectAllHandlerMapping如果为真如果当前容器没有还会去父容器中找），如果容器中有，优先使用容器中的HandlerMapping；如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
+
+#### RequestMappingHandlerMapping
+
+- 解析RequestMapping及派生注解，建立 请求路径----控制器之间的映射关系；
+- `初始化的时候`，先到当前容器下找到所有控制器，查看控制器有哪些方法并记录 路径---控制器方法  信息；
+
+- 默认的RequestMappingHandlerMapping 创建的RequestMappingHandlerMapping对象会作为dispatcher的属性，但是不会放入Spring容器中； 可以在WebConfig中，添加定义：
+  - ![image-20230405135550465](spring原理mac-photos/image-20230405135550465.png)
+
+- 模拟  路径匹配handlerMethod的过程；HandlerExcecutionChain不仅包含了handlerMethods[即控制器的方法信息]，还包含了拦截器对象；
+  - ![image-20230405141610054](spring原理mac-photos/image-20230405141610054.png)
+
+#### RequestMappingHandlerAdapter
+
+- 调用控制器方法
+- ![image-20230405142611874](spring原理mac-photos/image-20230405142611874.png)
+-  invokeHandlerMethod是protected方法，为了调用可以自己创建一个子类，放大修饰符；测试案例：
+
+- ![image-20230405143357866](spring原理mac-photos/image-20230405143357866.png)
+
+- 如何解析控制器方法的参数、返回值等？？
+- ![image-20230405150833366](spring原理mac-photos/image-20230405150833366.png)
+
+P70
