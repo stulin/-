@@ -544,7 +544,7 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230405113052468](spring原理mac-photos/image-20230405113052468.png)
   - 找到所有的HandlerMapping（detectAllHandlerMapping如果为真如果当前容器没有还会去父容器中找），如果容器中有，优先使用容器中的HandlerMapping；如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
 
-#### RequestMappingHandlerMapping
+#### RequestMappingHandlerMapping //流程：请求到handlerMapping映射到控制器，并和拦截器包装成调用链 chain；然后handlerAdapter解析参数；然后执行方法；最后 返回值 处理器对返回值进行解析；
 
 - 解析RequestMapping及派生注解，建立 请求路径----控制器之间的映射关系；
 - `初始化的时候`，先到当前容器下找到所有控制器，查看控制器有哪些方法并记录 路径---控制器方法  信息；
@@ -566,4 +566,26 @@ wrapIfNecessary:是否有必要创建代理
 - 如何解析控制器方法的参数、返回值等？？
 - ![image-20230405150833366](spring原理mac-photos/image-20230405150833366.png)
 
-P70
+//晾衣服、洗面奶；
+
+- 自定义参数解析器
+  - ![image-20230410140805276](spring原理mac-photos/image-20230410140805276.png)
+  - ![image-20230410140819593](spring原理mac-photos/image-20230410140819593.png)
+  - 加在参数位置上，运行期一直都有效；目标：标注了@Token，就会获取请求投的参数，赋值给token参数；
+  - ![image-20230410142447131](spring原理mac-photos/image-20230410142447131.png)
+  - 校验参数是否包含@Token注解，不包含（return false）则不继续解析；
+  - ![image-20230410142552736](spring原理mac-photos/image-20230410142552736.png)
+  - 将自定义的参数解析器，加入到Adapter类中；
+  - ![image-20230410142807805](spring原理mac-photos/image-20230410142807805.png)
+  - 测试；
+
+- 自定义返回值处理器 //依据返回值类型、方法是否加某个注解进行特殊处理
+
+  - ![image-20230410143225981](spring原理mac-photos/image-20230410143225981.png)
+  - ![image-20230410144056540](spring原理mac-photos/image-20230410144056540.png)
+  - 第三步是为了省略去spring MVC后续的视图解析等流程；
+  - ![image-20230410144140098](spring原理mac-photos/image-20230410144140098.png)
+  - ![image-20230410144452656](spring原理mac-photos/image-20230410144452656.png)
+  - 测试
+
+  P72
