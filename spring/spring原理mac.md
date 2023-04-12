@@ -566,8 +566,6 @@ wrapIfNecessary:是否有必要创建代理
 - 如何解析控制器方法的参数、返回值等？？
 - ![image-20230405150833366](spring原理mac-photos/image-20230405150833366.png)
 
-//晾衣服、洗面奶；
-
 - 自定义参数解析器
   - ![image-20230410140805276](spring原理mac-photos/image-20230410140805276.png)
   - ![image-20230410140819593](spring原理mac-photos/image-20230410140819593.png)
@@ -588,4 +586,28 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230410144452656](spring原理mac-photos/image-20230410144452656.png)
   - 测试
 
-  P72
+
+### 第二十一讲  参数解析器
+
+#### 常见的参数解析器
+
+- 每家解析参数默认@RequestParam或者@ModelAttribute
+- ![image-20230412211924689](spring原理mac-photos/image-20230412211924689.png)
+- 打印所哟的参数：这里的测试只需要解析配置类即可；
+- 参数名需要配置一个参数名解析器；注解需要配置getParameterAnnotations
+- ![image-20230412214805728](spring原理mac-photos/image-20230412214805728.png)
+- ![image-20230412214729732](spring原理mac-photos/image-20230412214729732.png)
+
+#### 逐个解析器调试@RequestParam
+
+- ![image-20230412220715273](spring原理mac-photos/image-20230412220715273.png)
+- ![image-20230412220804261](spring原理mac-photos/image-20230412220804261.png)
+- ![image-20230412220958763](spring原理mac-photos/image-20230412220958763.png)
+- resolver.resolveArgument入参：参数；modelAndView容器 暂存结果，servlet前期，bindFactory[用于类型转换]
+- 解析${}需要beanFactory 读取环境变量、控制文件；
+- ![image-20230412221423536](spring原理mac-photos/image-20230412221423536.png)
+- ![image-20230412222214873](spring原理mac-photos/image-20230412222214873.png)
+
+- 当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被尝试解析；
+
+P75
