@@ -591,23 +591,41 @@ wrapIfNecessary:是否有必要创建代理
 
 #### 常见的参数解析器
 
-- 每家解析参数默认@RequestParam或者@ModelAttribute
+- ![image-20230418201704758](spring原理mac-photos/image-20230418201704758.png)
+
+- 没加解析参数默认@RequestParam或者@ModelAttribute
 - ![image-20230412211924689](spring原理mac-photos/image-20230412211924689.png)
-- 打印所哟的参数：这里的测试只需要解析配置类即可；
-- 参数名需要配置一个参数名解析器；注解需要配置getParameterAnnotations
+- 控制器方法封装为HadnlerMethod，然后才能完成 访问路径映射；对象绑定与类型转换，入请求的String转换互为contrller的int入参；
+- getMethodParameters可以获取所有的形参，但是参数名还是Null，initParameterNameDiscovery才能解析参数名，
+- getParameterAnnotations获取参数上的所有注解名，但是真正解析注解，获取实参需要RequestParamMethodArgumentResolver.resolveArgument；
 - ![image-20230412214805728](spring原理mac-photos/image-20230412214805728.png)
-- ![image-20230412214729732](spring原理mac-photos/image-20230412214729732.png)
+- ![image-20230418195126689](spring原理mac-photos/image-20230418195126689.png)
 
 #### 逐个解析器调试@RequestParam
 
+- 模拟请求类定义
+- getMethodParameters可以获取所有的形参，但是参数名还是Null，initParameterNameDiscovery才能解析参数名，
+- getParameterAnnotations获取参数上的所有注解名，但是真正解析注解，获取实参需要RequestParamMethodArgumentResolver.resolveArgument；
+- new RequestParamMethodArguementResolver: beanFactory[用于支持${}解析等]  是否能省略@RequestParam注解 
+- resolver.resolveArgument入参：参数；modelAndView容器 暂存中间model结果，spring封装后的请求request，bindFactory[用于类型转换]
+- 解析${}需要beanFactory 读取环境变量、控制文件；
+
 - ![image-20230412220715273](spring原理mac-photos/image-20230412220715273.png)
 - ![image-20230412220804261](spring原理mac-photos/image-20230412220804261.png)
-- ![image-20230412220958763](spring原理mac-photos/image-20230412220958763.png)
-- resolver.resolveArgument入参：参数；modelAndView容器 暂存结果，servlet前期，bindFactory[用于类型转换]
-- 解析${}需要beanFactory 读取环境变量、控制文件；
-- ![image-20230412221423536](spring原理mac-photos/image-20230412221423536.png)
+- ![image-20230418194938944](spring原理mac-photos/image-20230418194938944.png)
+- ![image-20230418194755181](spring原理mac-photos/image-20230418194755181.png)
 - ![image-20230412222214873](spring原理mac-photos/image-20230412222214873.png)
-
 - 当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被尝试解析；
 
-P75
+#### 组合模式
+
+- 需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；//==组合器的设计模式==
+- ![image-20230418201104224](spring原理mac-photos/image-20230418201104224.png)
+- 解析@PathVariable注解之前，需要handlerMapping将{id}和实参对应起来
+- ![image-20230418203043026](spring原理mac-photos/image-20230418203043026.png)
+- ![image-20230418203126803](spring原理mac-photos/image-20230418203126803.png)
+- @RequestHeader @CookieValue @Value HttpServletRequest ，依次对应如下：
+- ![image-20230418204112667](spring原理mac-photos/image-20230418204112667.png)
+- ${}是环境参数，#{}是spring的EL表达式；
+
+P77
