@@ -628,4 +628,10 @@ wrapIfNecessary:是否有必要创建代理
 - ![image-20230418204112667](spring原理mac-photos/image-20230418204112667.png)
 - ${}是环境参数，#{}是spring的EL表达式；
 
-P77
+10-12
+
+- @ModelAttribute， 参数和javaBean的属性做一个绑定；参数解析器的结果作为模型数据存入ModelAndViewCOntainer；  @RequestBody依次对应 
+- ![image-20230425200654484](spring原理mac-photos/image-20230425200654484.png)
+- 消息转换器，把JSON数据解析为javaBean；注意：不需要@ModelAttribute注解的的processor一定要放在最后，不然会尝试省略方式解析@RequestBody对应的参数，认为它省略了@ModelAttribute； 多个省略要先对象，后普通类型；
+- dataBinder换一个：![image-20230425195229757](spring原理mac-photos/image-20230425195229757.png)
+- ![image-20230425200601463](spring原理mac-photos/image-20230425200601463.png)
