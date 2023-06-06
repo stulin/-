@@ -630,8 +630,16 @@ wrapIfNecessary:是否有必要创建代理
 
 10-12
 
-- @ModelAttribute， 参数和javaBean的属性做一个绑定；参数解析器的结果作为模型数据存入ModelAndViewCOntainer；  @RequestBody依次对应 
+- @ModelAttribute， 
+  - 参数和javaBean的属性做一个绑定，对应的ServletModelAttributeMethodProcessor可以指定@ModelAttribute是否可以省略，spring中会添加两个；参数解析器的结果作为模型数据存入ModelAndViewContainer[默认modelAttribute中名字为类型名字  ]；  
+  - 注意：不需要@ModelAttribute注解的的processor一定要放在最后，不然会尝试省略@ModelAttribute方式解析@RequestBody对应的参数，认为它省略了@ModelAttribute； 多个省略要先对象，后普通类型；
+- ![image-20230606105347176](spring原理mac-photos/image-20230606105347176.png)
+- @ModelAttribute，@RequestBody依次对应
 - ![image-20230425200654484](spring原理mac-photos/image-20230425200654484.png)
-- 消息转换器，把JSON数据解析为javaBean；注意：不需要@ModelAttribute注解的的processor一定要放在最后，不然会尝试省略方式解析@RequestBody对应的参数，认为它省略了@ModelAttribute； 多个省略要先对象，后普通类型；
-- dataBinder换一个：![image-20230425195229757](spring原理mac-photos/image-20230425195229757.png)
+- 消息转换器，把JSON数据解析为javaBean；
+- dataBinder[类型转换和数据绑定]换一个：![image-20230425195229757](spring原理mac-photos/image-20230425195229757.png)
 - ![image-20230425200601463](spring原理mac-photos/image-20230425200601463.png)
+
+//$P{}对应配置文件；#{}对应EL表达式；
+
+P78
