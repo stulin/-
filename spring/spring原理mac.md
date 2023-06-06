@@ -644,5 +644,8 @@ wrapIfNecessary:是否有必要创建代理
 
 ### 第二十二讲  参数解析器
 
-#### 获取参数名
+#### 获取参数名(之前用了DefaultParameterNameDiscoverer)
 
+- 编译    反编译 可以发现编译默认是不保留参数名；可以添加-parameters 
+
+0352
