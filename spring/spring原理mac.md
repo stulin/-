@@ -646,6 +646,28 @@ wrapIfNecessary:是否有必要创建代理
 
 #### 获取参数名(之前用了DefaultParameterNameDiscoverer)
 
-- 编译    反编译 可以发现编译默认是不保留参数名；可以添加-parameters 
+- 编译    反编译 可以发现编译默认是不保留参数名；可以添加-parameters[编译会生成MethodParameter，可以发射获取] ；或者-g[编译会生成LocalVariableTable，反射无法获取，但是可以ASM获取; 只能获取类的参数名，对接口不生效]  //javap -c -v .\Bean1.class
+- project structure-----Modules-----show-----dependencies，点击+号，JARs or directories，把Bean2.java所在的外层目录加进来；
+- 反射获取
+  - ![image-20230607230342537](spring原理mac-photos/image-20230607230342537.png)
+- ASM获取，借助工具，底层用的asm；
 
-0352
+- spring中结合了两种，勇大 是DefaultParameterNameDiscoverer
+  - ![image-20230607230037504](spring原理mac-photos/image-20230607230037504.png)
+
+### 第二十三讲  对象绑定与类型转换
+
+- 底层第一套转换接口与实现
+  - ![image-20230607230921675](spring原理mac-photos/image-20230607230921675.png)
+- 底层第二套转换接口  //jdk自带
+  - ![image-20230607231119585](spring原理mac-photos/image-20230607231119585.png)
+
+- 高层接口实现
+  - ![image-20230608001924728](spring原理mac-photos/image-20230608001924728.png)
+  - 转换器查找顺序
+    - ![image-20230608001940383](spring原理mac-photos/image-20230608001940383.png)
+  - 几个接口的附加功能
+    - ![image-20230608002014695](spring原理mac-photos/image-20230608002014695.png)
+    - spring反射插件bean，不知道有哪些属性，需要批量属性赋值；Property走反射的set get；Field 走反射的成员变量赋值；
+    - 绑定配置文件属性和Bean属性，directFieldAccess为真则走Field；
+
