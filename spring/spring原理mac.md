@@ -670,4 +670,13 @@ wrapIfNecessary:是否有必要创建代理
     - ![image-20230608002014695](spring原理mac-photos/image-20230608002014695.png)
     - spring反射插件bean，不知道有哪些属性，需要批量属性赋值；Property走反射的set get；Field 走反射的成员变量赋值；
     - 绑定配置文件属性和Bean属性，directFieldAccess为真则走Field；
+  - 四个实现的基本用法
+    - ![image-20230608124859458](spring原理mac-photos/image-20230608124859458.png)
+    - bean属性赋值，类型不匹配会自动转换；
+    - ![image-20230608124915996](spring原理mac-photos/image-20230608124915996.png)
+    - ![image-20230608124944364](spring原理mac-photos/image-20230608124944364.png)
+    - ![image-20230608125018307](spring原理mac-photos/image-20230608125018307.png)
+    - web环境下推荐的binder和propertyValues
+    - ![image-20230608125546669](spring原理mac-photos/image-20230608125546669.png)
 
+P84  04:12
