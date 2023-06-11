@@ -661,7 +661,6 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230607230921675](spring原理mac-photos/image-20230607230921675.png)
 - 底层第二套转换接口  //jdk自带
   - ![image-20230607231119585](spring原理mac-photos/image-20230607231119585.png)
-
 - 高层接口实现
   - ![image-20230608001924728](spring原理mac-photos/image-20230608001924728.png)
   - 转换器查找顺序
@@ -678,5 +677,30 @@ wrapIfNecessary:是否有必要创建代理
     - ![image-20230608125018307](spring原理mac-photos/image-20230608125018307.png)
     - web环境下推荐的binder和propertyValues
     - ![image-20230608125546669](spring原理mac-photos/image-20230608125546669.png)
+- 绑定工厂
+  - 不合格式的日期等需要自定义转换器；
+  - new ServletRequestDataBinderFactory入参：要新增的自定义的方法、???
+  - createBinder入参：封装的request请求、目标对象、对象名[随便起]
+  - @initBinder标注方法  入参：WebDataBinder；  factory.createBinder方法调用时，会回调@InitBinder方法，可以在回调中把自定义的formatter方法添加倒WebDataBinder中；
+    - 无自定义转换
+      - ![image-20230611220516701](spring原理mac-photos/image-20230611220516701.png)
+    - @InitBinder注解实现自定义转换，底层用的是PropertyEditorRegistry   PropertyEditor
+      - ![image-20230611220729862](spring原理mac-photos/image-20230611220729862.png)
+    - ![image-20230611112332517](spring原理mac-photos/image-20230611112332517.png)
+    - 用ConversionService+formatter 添加自定义转换方法，需要封装为Intializer；
+      - ![image-20230611222627050](spring原理mac-photos/image-20230611222627050.png)
+    - 两种都有，@InitBinder优先级更高
+      - ![image-20230611223736631](spring原理mac-photos/image-20230611223736631.png)
+    - 默认的ConversionService配合@DateTimeFormat指定日期格式；  DefaultFormattingConversionService或ApplicationConversionService；
+      - ![image-20230611224506730](spring原理mac-photos/image-20230611224506730.png)
 
-P84  04:12
+- 绑定工厂
+  - getGenericSuperclass获取有泛型信息的父类；有泛型信息 类型是ParameterizedType；
+  - resolveTypeArgument入参：子类类型、父类类型
+  - 获取父类泛型参数的两种方法
+    - ![image-20230611225345879](spring原理mac-photos/image-20230611225345879.png)
+
+
+
+//ctrl+alt+b查看实现类；
+
