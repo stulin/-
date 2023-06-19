@@ -702,5 +702,70 @@ wrapIfNecessary:是否有必要创建代理
 
 
 
-//ctrl+alt+b查看实现类；
+### 第24讲 ControllerAdvice
+
+- @InitBinder【添加自定义类型不定期】  @ExceptionHandler  @ModelAttribute
+- @InitBinder  用于扩展类型转换器
+  - @Controller【只对单个controller生效】、@ControllerAdvice中【全局，对所有控制器生效】
+  -  getDataBinderFactory被调用的时候会解析contorller1的 @InitBinder
+  - ![image-20230615210510198](spring原理mac-photos/image-20230615210510198.png)
+  - ![image-20230615210534354](spring原理mac-photos/image-20230615210534354.png)
+
+### 第25讲 控制器方法执行流程
+
+- ![image-20230618100545004](spring原理mac-photos/image-20230618100545004.png)
+- 图2 和 图3是连在一起的；先是图2这边的 准备工作：准备 数据绑定工厂、模型工厂，中间的临时数据保存倒ModelAndViewContainer；然后是图3：ServletInvocableHandlerMethod 完成调用：参数解析、反射调用方法、返回值解析、最后从ModelAndViewContainer中获取最终结果
+  - ![image-20230618101521892](spring原理mac-photos/image-20230618101521892.png)
+  - ![image-20230618102238378](spring原理mac-photos/image-20230618102238378.png)
+  - 参数名解析器、参数解析器、设置数据绑定工厂、加了@RespaonseStataus(HttpStatus.OK)，可以暂时不考虑返回值处理器；     handlerMethod.incokeAndHandle入参：http请求对象、MVCContainer
+  - ![image-20230618105410210](spring原理mac-photos/image-20230618105410210.png)
+  - ![image-20230618105422817](spring原理mac-photos/image-20230618105422817.png)
+
+### 第26讲 ControllerAdvice之@ModelAttribute
+
+- 加在参数名上  流程：参数解析器[ServletModelAttributeMethodProcessor]调用对象构造方法，用数据绑定工厂 绑定空对象和参数，结果放入MVCContainer；
+- 加在方法名上  流程：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]调用标注了@ModelAttribute方法，并把返回值放入MVCContainer；
+  - afterProperties会找到controller中所有带@ModelAtribute注解的方法，并记录；  
+  - ==我没想到的是用的handlerMethod对象，绑定的是foo方法，却不影响modelFactory的初始化和反射调用，看来getModelFactory.invoke的反射 真的是只执行了 带@ModelAtribute注解的方法 自动调用，所以只用到了类信息把；modelFactory的initModel( )方法可以为MVCContainer补充模型数据；==
+  - ![image-20230618113052400](spring原理mac-photos/image-20230618113052400.png)
+  - ![image-20230618113629547](spring原理mac-photos/image-20230618113629547.png)
+
+- 加在controller中方法上 流程：单个控制器中方法调用时都会补充mvc数据；  而ControllerAdvice中方法上则对应所有的的controller中方法；
+
+### 第27讲 返回值处理器
+
+- 准备返回值处理器；渲染：这里结合freeMarker：renderView()方法是自己写好的渲染方法；
+  - ![image-20230618123336599](spring原理mac-photos/image-20230618123336599.png)
+  - ![image-20230618123500334](spring原理mac-photos/image-20230618123500334.png)
+- 7种返回值类型：ModelAndView、String[代表视图的名字]、@ModelAttribute+@RequestMapping[默认试图会取路径]+自定义类型、自定义类型[省略@ModelAttribute]     不走视图渲染的三个方法:【RequestHandler为true】： HttpEntity<T>   HttpHeaders   @ResponseBody
+- ModelAndView  //modelAndView也没有定义试图名称啊？？？？ModelAndView种指定试图名了
+  - ![image-20230618125215217](spring原理mac-photos/image-20230618125215217.png)
+- String和ModelAndView类似  方法名改为method2即可；
+- ModelAttribute+@RequestMapping[默认试图会取路径]+自定义类型
+  - @RequestMapping[默认试图会取路径]原理：路径解析结果存到request作用域[resolveAndCacheLookupPath]，后续会生成默认的视图名；
+  - 没加@RequestMapping注解的话需要自己设置路径到request作用域
+  - ![image-20230619234244698](spring原理mac-photos/image-20230619234244698.png)
+- HttpEntity<T>  可控制 状态码  响应头  响应体；响应体有值
+  - ![image-20230620000522201](spring原理mac-photos/image-20230620000522201.png)
+- HttpHeaders：和HttpEntity<T>类似，不同 的是响应头有值
+  - ![image-20230620000928682](spring原理mac-photos/image-20230620000928682.png)
+- @ResponseBody  和HttpEntity<T>类似，有值的也是响应体，会自动生成部分响应头[有默认值]
+  - ![image-20230620000928682](file://C:/Users/lrh/Desktop/code202211/js/summaryAndStudyPlan/spring/spring%E5%8E%9F%E7%90%86mac-photos/image-20230620000928682.png?lastModify=1687191151)
+
+- 被解析返回结果的方法：
+  - ![image-20230619234802077](spring原理mac-photos/image-20230619234802077.png)
+  - ![image-20230619234821921](spring原理mac-photos/image-20230619234821921.png)
+  - ![image-20230620001250060](spring原理mac-photos/image-20230620001250060.png)
+
+小tips:
+
+- //ctrl+alt+b查看实现类； ctrl + alt +v 提取出变量； ctrl+alt+m 抽取成方法； ctrl + alt +上/下箭头  stack trace
+
+- MockHttpServletRequest可以模拟http请求
+
+- MVCContainer中默认的 对象名字：类型名首字母小写；
+
+  
+
+P99
 
