@@ -767,5 +767,71 @@ wrapIfNecessary:是否有必要创建代理
 
   
 
-P99
+### 第28讲 MessageConverter
 
+- 信息转换器：入参处理器解析requsetBody转换为JSON串、返回值处理器等；
+
+- 消息  javaBean转换示例：
+
+  - ![image-20230622200950643](spring原理mac.assets/image-20230622200950643.png)
+
+  - ![image-20230622201212626](spring原理mac.assets/image-20230622201212626.png)
+
+  - ![image-20230622201224770](spring原理mac.assets/image-20230622201224770.png)
+
+- 多个转换器的执行顺序，若指定请求的response的ContentType/request的Accept头，则以ContentType/Accept头为准；默认List顺序；
+  - ![image-20230622202136887](spring原理mac.assets/image-20230622202136887.png)
+  - ![image-20230622202210618](spring原理mac.assets/image-20230622202210618.png)
+
+### 第29讲 ControllerAdice之ResponseBodyAdvice
+
+- 对请求体、响应体的增强，例：Result类直接返回，不是则可以自动包装为Result；
+- BeforeBodyWrite入参：响应结果、返回值的相关信息如方法名  注解等、contentType、converter等；
+- AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算
+- ![image-20230623152102107](spring原理mac.assets/image-20230623152102107.png)
+- ![image-20230623152219896](spring原理mac.assets/image-20230623152219896.png)
+- ![image-20230623152143191](spring原理mac.assets/image-20230623152143191.png)
+
+### 第30讲 异常处理
+
+- 之前不是好奇，@Exception注解后，未处理的异常是如何返回给前端的？这一节其实就是讲解这个过程
+- dispatcherServlet的doDispatch方法：handlerAdaptor、handle()，如果有异常 会先记录，后续调用processDispatchResult；
+- ![image-20230623153458512](spring原理mac.assets/image-20230623153458512.png)
+- ExceptionHandlerExceptionResolver:处理带有@Exception；resolver.afterPropertiesSet()会自动设置一些默认的参数解析器、返回值处理器；
+- 示例：
+  - ![image-20230623154842405](spring原理mac.assets/image-20230623154842405.png)
+  - ![image-20230623160015680](spring原理mac.assets/image-20230623160015680.png)
+  - ![image-20230623160441568](spring原理mac.assets/image-20230623160441568.png)
+  - 嵌套异常信息也能取出；
+  - ![image-20230623162806749](spring原理mac.assets/image-20230623162806749.png)
+  - ![image-20230623162745418](spring原理mac.assets/image-20230623162745418.png)
+  - 例：获取入参
+    - ![image-20230623163447886](spring原理mac.assets/image-20230623163447886.png)
+    - ![image-20230623163517679](spring原理mac.assets/image-20230623163517679.png)
+
+### 第31讲：ControllerAdvice之@ExceptionHandler
+
+-  全局异常处理，@ControllerAdvice注解类+@ExceptionHandler注解方法，异常会由方法处理
+- 会先找抛异常方法上是否有@Exception注解，如果没有的话，会找@ControllerAdvice注解类+@ExceptionHandler注解方法，异常会由方法处理
+- 底层实现原理：
+  - 初始化的afterPropies方法中会调用initExceptionHandlerAdiceCache()，该方法会 查找context中所有的ControllerAdviceBean，并便利找到其中包含exceptionhandler注解的方法，加入cahce，方便后续从cahce中取异常处理方法并调用；
+
+- ![image-20230623165828547](spring原理mac.assets/image-20230623165828547.png)
+- @Bean注解的方法都会自动回调initializeBean
+- ![image-20230623165845605](spring原理mac.assets/image-20230623165845605.png)
+
+### 第32讲 tomcat的异常处理
+
+- 控制器的异常可以被ControllerAdvice处理，但是如filter中的异常不会被处理，需要更上层的异常处理者；其实tomcat是自带默认的异常处理器的，会自动返回异常的起因等等；
+  - 定义：errorPageRegistrart添加tomcat出错了默认的错误页面地址，可以是静态页面或者自定义的controller的地址；errorPageRegistrarBeanPostProcessor 用于 回调errorPageRegistrar
+  - ![image-20230623173942480](spring原理mac.assets/image-20230623173942480.png)
+  - ![image-20230623174133520](spring原理mac.assets/image-20230623174133520.png)
+  - ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
+
+
+
+//tips:.if;
+
+//todo:mediaType列表；  编码方式列表；
+
+//spring返回值就两种，一种是HttpEntity这种，那MVC就为空；第二种就是MVC响应，那么返回的结果内容存在MVC中；
