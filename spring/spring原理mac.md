@@ -823,14 +823,23 @@ wrapIfNecessary:是否有必要创建代理
 ### 第32讲 tomcat的异常处理
 
 - 控制器的异常可以被ControllerAdvice处理，但是如filter中的异常不会被处理，需要更上层的异常处理者；其实tomcat是自带默认的异常处理器的，会自动返回异常的起因等等；
-  - 定义：errorPageRegistrart添加tomcat出错了默认的错误页面地址，可以是静态页面或者自定义的controller的地址；errorPageRegistrarBeanPostProcessor 用于 回调errorPageRegistrar
-  - ![image-20230623173942480](spring原理mac.assets/image-20230623173942480.png)
-  - ![image-20230623174133520](spring原理mac.assets/image-20230623174133520.png)
+- tomcat自定义异常处理地址
+  - 定义：errorPageRegistrart添加tomcat出错了默认的错误页面地址，可以是静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]用于 回调errorPageRegistrar
+  - 其实 方法的入参/最后返回的ErrorPageRegistrar 就是TomcatServletWebServerFactory[是ErrorPageRegistrar的子类]
+  - ![image-20230625234214224](spring原理mac-photos/image-20230625234214224.png)
+  - tomcat捕获到spring框架外的异常会保存到Request域中；
+  - ![image-20230625234424452](spring原理mac-photos/image-20230625234424452.png)
   - ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
 
+- BasicErrorController
+  - 支持不同的响应格式
+    - ![image-20230625235542579](spring原理mac-photos/image-20230625235542579.png)
+  - 入参： ErrotAttributes[要显示的异常内容]   ErrorProperties[要读取的配置文件的键值信息]
+    - ![image-20230625235808206](spring原理mac-photos/image-20230625235808206.png)
 
+P108
 
-//tips:.if;
+//tips:.if;  ctrl+alt+v
 
 //todo:mediaType列表；  编码方式列表；
 
