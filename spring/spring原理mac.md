@@ -832,10 +832,13 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
 
 - BasicErrorController
-  - 支持不同的响应格式
+  - 支持不同的响应格式[json格式  html格式]
     - ![image-20230625235542579](spring原理mac-photos/image-20230625235542579.png)
-  - 入参： ErrotAttributes[要显示的异常内容]   ErrorProperties[要读取的配置文件的键值信息]
+  - 返回格式为json[如postMan请求] 入参： ErrotAttributes[要显示的异常内容]   ErrorProperties[要读取的配置文件的键值信息]
     - ![image-20230625235808206](spring原理mac-photos/image-20230625235808206.png)
+  - 返回格式为html[如浏览器请求 postman设置Accept为text/html]  需要自定义名为error的视图，这里用bean+视图解析器的方式提供
+    - ![image-20230627124607491](spring原理mac-photos/image-20230627124607491.png)
+    - ![image-20230627124713159](spring原理mac-photos/image-20230627124713159.png)
 
 P108
 
