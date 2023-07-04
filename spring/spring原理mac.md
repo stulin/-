@@ -840,10 +840,64 @@ wrapIfNecessary:是否有必要创建代理
     - ![image-20230627124607491](spring原理mac-photos/image-20230627124607491.png)
     - ![image-20230627124713159](spring原理mac-photos/image-20230627124713159.png)
 
+
+
+#### 第33讲  BeanNameUrlHandlerMapping与SimpleControllerHandlerAdapter
+
+- 之前用的RequestMappingHandlerMapping
+  - ![image-20230704212839256](spring原理mac-photos/image-20230704212839256.png)
+- 路径映射[需求解析@RequestMapping及其派生注解]    调用控制器方法[解析参数  调用 处理返回值]
+- BeanNameUrlHandlerMapping   不是去找@RequstMapping注解的方法，而是去找  名字是/ 开头的bean
+- SimpleControllerHandlerAdapter   [要求控制器的类必须实现Controller接口]
+- ![image-20230704215532370](spring原理mac-photos/image-20230704215532370.png)
+- ![image-20230704214047266](spring原理mac-photos/image-20230704214047266.png)
+- ![image-20230704214008638](spring原理mac-photos/image-20230704214008638.png)
+- 自定义MyHandlerMapping
+  -  自己获取容器的bean最简单的方法就是注入ApplicationContext；  需要先找到 容器中所有实现了controller接口的bean，结果保存到collect中；
+  - ![image-20230704221620351](spring原理mac-photos/image-20230704221620351.png)
+  - ![image-20230704221643227](spring原理mac-photos/image-20230704221643227.png)
+
+- 自定义MyHandlerAdapter
+  - getLastModified已经过时；handle返回null表示不视图渲染流程；
+  - ![image-20230704221525389](spring原理mac-photos/image-20230704221525389.png)
+
 P108
 
-//tips:.if;  ctrl+alt+v
+//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if
 
 //todo:mediaType列表；  编码方式列表；
 
 //spring返回值就两种，一种是HttpEntity这种，那MVC就为空；第二种就是MVC响应，那么返回的结果内容存在MVC中；
+
+
+
+
+
+//蜂蜜、麦片；蒸汽熨斗
+
+//去异味喷雾  蒸汽熨斗；  局部污渍清洁液、小刷子、不掉毛的小帕子[必要时可开水]；[lint free]
+
+棉质--洗衣机：分  白[温水 漂白粉]  浅 深[常温]三色；
+
+丝质：人造丝[洗衣机  衣物清洗带 温和模式 不能阳光直射]  真丝[手洗  常温 专用洗衣液，局部刷  泡15min-30  挤干]
+
+羊毛：羊绒[手洗  常温 专用洗衣液，局部刷  泡15min-30  挤干  平铺晾晒 毛球修剪器]   其它[洗衣机  衣物清洗带 温和模式 低转速 不能阳光直射 平铺晾晒] 
+
+
+
+收纳：
+
+挂：外套[宽一家]
+
+叠：弹力、贴身的；
+
+裤子：可叠可挂；
+
+
+
+其它：
+
+牛仔裤：尽量不洗；蒸汽熨斗；   洗衣机 洗衣袋；
+
+去静电：特殊喷雾；
+
