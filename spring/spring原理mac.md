@@ -842,7 +842,9 @@ wrapIfNecessary:是否有必要创建代理
 
 
 
-#### 第33讲  BeanNameUrlHandlerMapping与SimpleControllerHandlerAdapter
+### 第33讲  BeanNameUrlHandlerMapping与SimpleControllerHandlerAdapter
+
+- 这么多映射器和适配器，各自有优缺点和适用场景吗？还是做好历史兼容？
 
 - 之前用的RequestMappingHandlerMapping
   - ![image-20230704212839256](spring原理mac-photos/image-20230704212839256.png)
@@ -861,9 +863,80 @@ wrapIfNecessary:是否有必要创建代理
   - getLastModified已经过时；handle返回null表示不视图渲染流程；
   - ![image-20230704221525389](spring原理mac-photos/image-20230704221525389.png)
 
-P108
+- RouterFunctionMapping与HandlerFunctionAdapter
+  - RouterFunctionMapping初始化时会找到容器中所有的RouterFunction，并添加到？？请求来了，会和所有的RouterFunction的条件进行匹配，匹配上就找到对应的处理函数；最后由adapter反射 调用函数
+  - 收集所有的RouterFunction，包括RequestPreficate[请求路径、请求方式等]  HandlerFunction [处理程序]，最后又HandlerFunctionAdapter调用handler
+  - 例：get请求、请求路径为/r1 ，由后面的处理器(函数式接口)响应；
+  - 和@RequestMapping对比，核心是 映射路径的方式不同，依据 RequestPRedicate方式，参数解析等功能相对少，但是简洁
+    - ![image-20230706220402510](spring原理mac-photos/image-20230706220402510.png)
 
-//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if
+- SimpleUrlHandlerMapping与HttpRequestHandlerAdapter
+  - SimpleUrlHandlerMapping映射；ResourceHttpRequestHandler作为处理器处理静态资源；HttpRequestHandlerAdapter调用处理器；
+  - SimpleUrlHandlerMapping 没有自动收集返回结果为ResourceHttpRequestHandler的类，需要自己初始化，把所有的类汇总；
+  - tomcat三件套初始化略；
+  - ![image-20230709104505234](spring原理mac-photos/image-20230709104505234.png)
+  - ![image-20230709104437991](spring原理mac-photos/image-20230709104437991.png)
+  - ResourceHttpRequestHandler优化//afterPropertiesSet 默认只有一个路径资源的解析器；这里设置为  缓存资源、压缩资源、路径资源；
+    - ![image-20230709105430751](spring原理mac-photos/image-20230709105430751.png)
+    - 要使用EncodedResourceResolver压缩功能还需要初始化进行html文件压缩
+      - ![image-20230709110510576](spring原理mac-photos/image-20230709110510576.png)
+  - 欢迎页[静态]   //将访问/路径的请求映射到欢迎页 //springBoot才有
+    - 入参：null, context, 欢迎页静态资源[用于判断是否存在]，指定处理器的 路径处理范围？？这里的/**对应前一讲静态资源的路径
+    - ![image-20230709111737048](spring原理mac-photos/image-20230709111737048.png)
+    - ![image-20230709111703047](spring原理mac-photos/image-20230709111703047.png)
+  - 小结：
+    - ![image-20230709143751184](spring原理mac-photos/image-20230709143751184.png)
+
+### 36MVC处理流程
+
+- 像一个总结，把前面各个小结的 单个组件 的内容，在这里全部都串联起来了，这里是大纲，前面是细枝末节;   结合每个细节，去前面的章节查看对应的内容//初始化时机：第一次请求来；配置load_on_startUp； 
+
+- ![image-20230709153045566](spring原理mac-photos/image-20230709153045566.png)
+- ![image-20230709154354568](spring原理mac-photos/image-20230709154354568.png)
+- ![image-20230709154526233](spring原理mac-photos/image-20230709154526233.png)
+
+
+
+### 37构建Boot项目骨架
+
+- curl  https://start.spring.io/pom.xml  -d dependencies=mysql, mybatis,web -o pom.xml
+- idea64 .\pom.xml
+- //help:  curl https://start.spring.io
+
+### 38Boot War项目
+
+- jsp是能打包为war，这里视图用jsp； 
+
+- idea--> new project-->spring initializr-->打包方式改为war, next-->勾选spring Web , finish
+- src/main下新建webapp[文件夹名字固定]，创建jsp文件； 
+- com.itheima的包下新建controller文件夹，新建controller文件； //字符串返回值会被解析成视图名
+
+- ![image-20230709160006344](spring原理mac-photos/image-20230709160006344.png)
+- 设置视图名字的前缀、后缀
+  - ![image-20230709160119880](spring原理mac-photos/image-20230709160119880.png)
+
+- //handlerMethod包含了控制器方法对象和控制器对象； preHandler判断请求是否被响应；
+- 外置tomcat
+  - 运行   配置-->  + -->tomcat server --> local  -->选择tomcat路径--> fix --> ==test5 : war exploded？？？== ,  context建议/ -->apply -->直接运行；
+  - 需要创建ServletInitializer类，作为外置tomcat接入springBoot的入口
+  - ![image-20230709162929784](spring原理mac-photos/image-20230709162929784.png)
+- 内嵌tomcat
+  - 没有自带jsp解析器，需要加入jsp解析器
+  - ![image-20230709165138427](spring原理mac-photos/image-20230709165138427.png)
+  - ![image-20230709165006759](spring原理mac-photos/image-20230709165006759.png)
+
+### 39 Boot启动流程
+
+- SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
+- 主要内容分为两块，构造方法 做了什么？run方法 做了什么？
+- 构造方法（准备工作，run方法创建spring容器）
+  - 源：配置类、xml文件等等；这里主要是指引导类； 
+  - springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext；  初始化器对ApplicationContext添加扩展；添加监听器  springBoot启动时的重要事件； 主类即运行main方法的类；
+  - ![image-20230709170908103](spring原理mac-photos/image-20230709170908103.png)
+
+//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存
+
+//格式优化：lamda  静态导入；
 
 //todo:mediaType列表；  编码方式列表；
 
