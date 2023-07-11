@@ -925,14 +925,11 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230709165138427](spring原理mac-photos/image-20230709165138427.png)
   - ![image-20230709165006759](spring原理mac-photos/image-20230709165006759.png)
 
-### 39 Boot启动流程
+### 39 Boot启动流程-构造方法
 
 - SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
 - 主要内容分为两块，构造方法 做了什么？【准备该做】run方法 做了什么？【真正创建spring容器】
 - 构造方法（准备工作，run方法创建spring容器）
-  -  初始化器对ApplicationContext添加扩展；
-  - 添加监听器  springBoot启动时的重要事件； 
-  - 主类即运行main方法的类；
   - ![image-20230709170908103](spring原理mac-photos/image-20230709170908103.png)
 - 示例：设置BeanDefinition源
   - BeanDefinition源：配置类、xml文件等等；这里主要是指引导类； 
@@ -941,8 +938,25 @@ wrapIfNecessary:是否有必要创建代理
   - springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext； 
   - ![image-20230711124448244](spring原理mac-photos/image-20230711124448244.png)
   - ![image-20230711124758864](spring原理mac-photos/image-20230711124758864.png)
+- ApplicationContext初始化
+  - 初始化器对ApplicationContext添加扩展；
+  - initialize的入参就是  容器的初始化器
+  - ![image-20230711194220069](spring原理mac-photos/image-20230711194220069.png)
+- 监听器与事件
+  - 入参event就是生成的事件
+  - ![image-20230711195830198](spring原理mac-photos/image-20230711195830198.png)
+- 推断主类即运行main方法的类；
+  - ![image-20230711200137785](spring原理mac-photos/image-20230711200137785.png)
 
-//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存
+#### 39 Boot启动流程-run
+
+- 事件发布
+  - SpringApplicationRunListener的实现类只有一个，接口、实现类的对应关系保存在配置文件中（spring-boot-***.META-INF.spring .factories），SpringFactoriesLoader提供相关访问方法； loadFactoryNames入参：接口类型、classLoader
+  - 反射创建发布器（调的是有参构造），并模拟发送各个事件//关注发布哪些事件即可，不必过于在意每个方法入参
+  - ![image-20230711204420913](spring原理mac-photos/image-20230711204420913.png)
+  - ![image-20230711204518120](spring原理mac-photos/image-20230711204518120.png)
+
+//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存； 接口-->右键-->find usages
 
 //格式优化：lamda  静态导入；
 
