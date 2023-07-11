@@ -928,11 +928,19 @@ wrapIfNecessary:是否有必要创建代理
 ### 39 Boot启动流程
 
 - SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
-- 主要内容分为两块，构造方法 做了什么？run方法 做了什么？
+- 主要内容分为两块，构造方法 做了什么？【准备该做】run方法 做了什么？【真正创建spring容器】
 - 构造方法（准备工作，run方法创建spring容器）
-  - 源：配置类、xml文件等等；这里主要是指引导类； 
-  - springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext；  初始化器对ApplicationContext添加扩展；添加监听器  springBoot启动时的重要事件； 主类即运行main方法的类；
+  -  初始化器对ApplicationContext添加扩展；
+  - 添加监听器  springBoot启动时的重要事件； 
+  - 主类即运行main方法的类；
   - ![image-20230709170908103](spring原理mac-photos/image-20230709170908103.png)
+- 示例：设置BeanDefinition源
+  - BeanDefinition源：配置类、xml文件等等；这里主要是指引导类； 
+  - ![image-20230711124048783](spring原理mac-photos/image-20230711124048783.png)
+- 示例：推断应用类型   //ClassUtils.isPresent 判断类路径下是否存在某个类
+  - springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext； 
+  - ![image-20230711124448244](spring原理mac-photos/image-20230711124448244.png)
+  - ![image-20230711124758864](spring原理mac-photos/image-20230711124758864.png)
 
 //tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存
 
