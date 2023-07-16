@@ -930,7 +930,10 @@ wrapIfNecessary:是否有必要创建代理
 - SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
 - 主要内容分为两块，构造方法 做了什么？【准备该做】run方法 做了什么？【真正创建spring容器】
 - 构造方法（准备工作，run方法创建spring容器）
-  - ![image-20230709170908103](spring原理mac-photos/image-20230709170908103.png)
+  - ![image-20230716142710782](spring原理mac-photos/image-20230716142710782.png)
+  - ![image-20230716142514501](spring原理mac-photos/image-20230716142514501.png)
+  - 进一步显示bean的来源
+    - ![image-20230716144308341](spring原理mac-photos/image-20230716144308341.png)
 - 示例：设置BeanDefinition源
   - BeanDefinition源：配置类、xml文件等等；这里主要是指引导类； 
   - ![image-20230711124048783](spring原理mac-photos/image-20230711124048783.png)
@@ -950,13 +953,38 @@ wrapIfNecessary:是否有必要创建代理
 
 #### 39 Boot启动流程-run
 
+- ![image-20230716144717300](spring原理mac-photos/image-20230716144717300.png)
 - 事件发布
   - SpringApplicationRunListener的实现类只有一个，接口、实现类的对应关系保存在配置文件中（spring-boot-***.META-INF.spring .factories），SpringFactoriesLoader提供相关访问方法； loadFactoryNames入参：接口类型、classLoader
+  - 在spring一些重要节点结束之后就发布事件；
   - 反射创建发布器（调的是有参构造），并模拟发送各个事件//关注发布哪些事件即可，不必过于在意每个方法入参
   - ![image-20230711204420913](spring原理mac-photos/image-20230711204420913.png)
   - ![image-20230711204518120](spring原理mac-photos/image-20230711204518120.png)
 
-//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存； 接口-->右键-->find usages
+- 后续步骤
+  - 这里bean定义读取，以获取  类定义配置  bean、xml、classPathBeanDefinitionScanner为例；
+  - 第10不用到的bean的类名 xml位置  扫描路径等本质上是.setResource方法设置的；
+  - 1？  8 9 10 11设置增强；回调增强；加载bean定义；准备好bean定义才好调用 refresh()方法：准备后处理器，初始化所有单例；
+    - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
+    - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
+  - 2  12run接口风味两类（入参不同  可以用于预加载数据等）：CommandLineRunner    main传的， ApplicationRunner  封装后的；
+    - ![image-20230716155125046](spring原理mac-photos/image-20230716155125046.png)
+    - ![image-20230716155615132](spring原理mac-photos/image-20230716155615132.png)
+    - 添加参数
+      -  ![image-20230716155323268](spring原理mac-photos/image-20230716155323268.png)
+    - ![image-20230716155516289](spring原理mac-photos/image-20230716155516289.png)
+  - 3 4 5 6环境对象有关[配置信息的抽象]    //系统环境变量   properties yaml
+  - step3：设置env变量；设置命令行变量[暂时没有approperties的来源]；
+  - ApplicationEnvironment默认两个来源  propertySources：系统属性[VM option]、系统环境[操作系统的环境变量]；有先后查找顺序；
+  - 添加系统属性
+    - ![image-20230716223044795](spring原理mac-photos/image-20230716223044795.png)
+  - approperties、命令行[prgram arguments]  等人工的属性，可以手工添加；
+
+P134
+
+
+
+//tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存； 接口-->右键-->find usages;  ctrl+alt+左键直接到实现类；  idea右边右键文件，copy path,  reference；
 
 //格式优化：lamda  静态导入；
 
