@@ -963,24 +963,55 @@ wrapIfNecessary:是否有必要创建代理
 
 - 后续步骤
   - 这里bean定义读取，以获取  类定义配置  bean、xml、classPathBeanDefinitionScanner为例；
+  
   - 第10不用到的bean的类名 xml位置  扫描路径等本质上是.setResource方法设置的；
+  
   - 1？  8 9 10 11设置增强；回调增强；加载bean定义；准备好bean定义才好调用 refresh()方法：准备后处理器，初始化所有单例；
     - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
     - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
+    
   - 2  12run接口风味两类（入参不同  可以用于预加载数据等）：CommandLineRunner    main传的， ApplicationRunner  封装后的；
     - ![image-20230716155125046](spring原理mac-photos/image-20230716155125046.png)
     - ![image-20230716155615132](spring原理mac-photos/image-20230716155615132.png)
     - 添加参数
       -  ![image-20230716155323268](spring原理mac-photos/image-20230716155323268.png)
     - ![image-20230716155516289](spring原理mac-photos/image-20230716155516289.png)
+    
   - 3 4 5 6环境对象有关[配置信息的抽象]    //系统环境变量   properties yaml
+  
   - step3：设置env变量；设置命令行变量[暂时没有approperties的来源]；
+  
   - ApplicationEnvironment默认两个来源  propertySources：系统属性[VM option]、系统环境[操作系统的环境变量]；有先后查找顺序；
+  
   - 添加系统属性
+    
     - ![image-20230716223044795](spring原理mac-photos/image-20230716223044795.png)
-  - approperties、命令行[prgram arguments]  等人工的属性，可以手工添加；
+    
+  - approperties、命令行[prgram arguments]  等人工的属性，可以手工添加；通过添加propertySource的方式；
+  
+    - ![image-20230720192319042](spring原理mac-photos/image-20230720192319042.png)
+  
+  - step4：为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
+  
+    - ![image-20230720192153496](spring原理mac-photos/image-20230720192153496.png)
+  
+  - step5：对env进一步增强，补充propertySource[通过后处理器的方式，property对应的源就是在这一步添加]；   spring中是通过监听器读取配置，进行增强[事件发布、监听、增强]；
+  
+    - ![image-20230720194759521](spring原理mac-photos/image-20230720194759521.png)
+  
+    - ![image-20230720200059050](spring原理mac-photos/image-20230720200059050.png)
+  
+  - 补充：绑定env中键值到对象；
+  
+    - ![image-20230720202642913](spring原理mac-photos/image-20230720202642913.png)
+  
+  - step6：配置文件中键值绑定到springApplication
+  
+    - ![image-20230720203049098](spring原理mac-photos/image-20230720203049098.png)
+  
+  - step7:打印banner，需要借助SpringApplicationBannerPrinter[会把banner转换为文本信息]，可以自己指定banner，不指定会使用默认的banner；版本信息从spring boot jar包获取，manifest.mf中有版本信息;
 
-P134
+P138
 
 
 
