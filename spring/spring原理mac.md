@@ -963,55 +963,80 @@ wrapIfNecessary:是否有必要创建代理
 
 - 后续步骤
   - 这里bean定义读取，以获取  类定义配置  bean、xml、classPathBeanDefinitionScanner为例；
-  
   - 第10不用到的bean的类名 xml位置  扫描路径等本质上是.setResource方法设置的；
-  
   - 1？  8 9 10 11设置增强；回调增强；加载bean定义；准备好bean定义才好调用 refresh()方法：准备后处理器，初始化所有单例；
     - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
     - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
-    
   - 2  12run接口风味两类（入参不同  可以用于预加载数据等）：CommandLineRunner    main传的， ApplicationRunner  封装后的；
     - ![image-20230716155125046](spring原理mac-photos/image-20230716155125046.png)
     - ![image-20230716155615132](spring原理mac-photos/image-20230716155615132.png)
     - 添加参数
       -  ![image-20230716155323268](spring原理mac-photos/image-20230716155323268.png)
     - ![image-20230716155516289](spring原理mac-photos/image-20230716155516289.png)
-    
   - 3 4 5 6环境对象有关[配置信息的抽象]    //系统环境变量   properties yaml
-  
   - step3：设置env变量；设置命令行变量[暂时没有approperties的来源]；
-  
   - ApplicationEnvironment默认两个来源  propertySources：系统属性[VM option]、系统环境[操作系统的环境变量]；有先后查找顺序；
-  
   - 添加系统属性
     
     - ![image-20230716223044795](spring原理mac-photos/image-20230716223044795.png)
-    
   - approperties、命令行[prgram arguments]  等人工的属性，可以手工添加；通过添加propertySource的方式；
   
     - ![image-20230720192319042](spring原理mac-photos/image-20230720192319042.png)
-  
   - step4：为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
   
     - ![image-20230720192153496](spring原理mac-photos/image-20230720192153496.png)
-  
   - step5：对env进一步增强，补充propertySource[通过后处理器的方式，property对应的源就是在这一步添加]；   spring中是通过监听器读取配置，进行增强[事件发布、监听、增强]；
   
     - ![image-20230720194759521](spring原理mac-photos/image-20230720194759521.png)
   
     - ![image-20230720200059050](spring原理mac-photos/image-20230720200059050.png)
-  
   - 补充：绑定env中键值到对象；
   
     - ![image-20230720202642913](spring原理mac-photos/image-20230720202642913.png)
-  
   - step6：配置文件中键值绑定到springApplication
   
     - ![image-20230720203049098](spring原理mac-photos/image-20230720203049098.png)
-  
   - step7:打印banner，需要借助SpringApplicationBannerPrinter[会把banner转换为文本信息]，可以自己指定banner，不指定会使用默认的banner；版本信息从spring boot jar包获取，manifest.mf中有版本信息;
+  - boot执行流程---小结
+    - 源码阅读：新建一个事件发布器（listener）； 发布starting事件；参数封装【--的为命令行源，不带的不是】；创建environment对象，参数消息封装为propertySource源添加进来；对命名不规范的键处理；发布environmentPrepared事件，监听器会添加postProcessor，增加environment添加更多源；environment中以springmain为前缀的key和springApplication对象做绑定；打印banner消息；创建spring容器，依据三种容器类型选择实现；应用初始化器，增强applicaionContext; [发布contrextPrepared];得到所有的beanDefinition源，并加载到ApplicationContext；[发布contextLoaded事件]；调用ApplicationCOntext的refresh方法[调用bean工厂  bean  初始化每个单例 ]；发布started事件；调用所有实现APplicationRunner接口、commandLine接口的Runner的Bean;[发布running事件]
+    - ![image-20230723134849650](spring原理mac-photos/image-20230723134849650.png)
 
-P138
+### 第三十讲：tomcat
+
+- tomcat重要组件
+  - tomcat能识别的只有三大组件，经过web.xml配置的 servlet filter  listener[3.0之后可以不用配置，编程动态添加]
+  - ![image-20230723135942290](spring原理mac-photos/image-20230723135942290.png)
+- 内嵌tomcat使用示例
+  - tomcat.adContext:如果要用/作为虚拟目录，第一个参数要传"";
+  - servletContainerInitializer不会添加后立刻执行，会在tomcat.start()方法调用后，创建servletConext对象并回调；
+  - ![image-20230723144314109](spring原理mac-photos/image-20230723144314109.png)
+  - ![image-20230723144331196](spring原理mac-photos/image-20230723144331196.png)
+  - ![image-20230723144357953](spring原理mac-photos/image-20230723144357953.png)
+- 内嵌tomcat与spring融合
+  - 几个术语的含义实例：context为tomcat中的组件，含义通常为一个应用；applicationContext是spring中的概念，含义通常是spring容器，内含所有的bean等信息；servletContext则是tomcat中的组件，含义是应用中包含的servlet等信息；
+  - 需要拿到springContext ，并把对对应的servlet、dispatcherServlet添加到servletContext【ctx.addServlet】/或者借用spring的ServletRegisrationBean的onStartup方法注册到servletContext
+  - 上述的tomcat创建、结合spring、与启动，本质上实在AbstractApplicationContext的refresh()中实现的；
+  - ![image-20230723154753265](spring原理mac-photos/image-20230723154753265.png)
+  - ![image-20230723161733552](spring原理mac-photos/image-20230723161733552.png)
+  - ![image-20230723161711554](spring原理mac-photos/image-20230723161711554.png)
+
+#### 第三十一讲：自动配置
+
+- 自动配置原理
+  - 也是Bean，但一般是多个项目通用的bean;
+  - 为了引入三方配置类 的类名可以写进配置文件，使用ImportSelector接口，接口的selectImports方法的返回值就是要导入的配置类的类名，
+  - resources/META-INF/spring.factories   配置文件名 //细节：换行加/，内部类用$而不是.
+  - 示例：整合第三方的配置类； @Import+ ImportSelctor接口；
+    - ![image-20230723164349903](spring原理mac-photos/image-20230723164349903.png)
+    - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
+
+
+
+
+
+
+
+#### ==//后面补充学习下spring事务的递归回滚==
 
 
 
