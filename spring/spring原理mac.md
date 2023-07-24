@@ -1022,13 +1022,26 @@ wrapIfNecessary:是否有必要创建代理
 
 #### 第三十一讲：自动配置
 
-- 自动配置原理
+- 配置类整合原理
   - 也是Bean，但一般是多个项目通用的bean;
   - 为了引入三方配置类 的类名可以写进配置文件，使用ImportSelector接口，接口的selectImports方法的返回值就是要导入的配置类的类名，
   - resources/META-INF/spring.factories   配置文件名 //细节：换行加/，内部类用$而不是.
   - 示例：整合第三方的配置类； @Import+ ImportSelctor接口；
     - ![image-20230723164349903](spring原理mac-photos/image-20230723164349903.png)
     - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
+- 自动配置原理
+  - spring会自动扫描当前目录、所有jar包目录的spring.factories的配置；要看自动配置，只要选EnableAutoConfiguration.class的名字为key的值；
+    - ![image-20230724222748984](spring原理mac-photos/image-20230724222748984.png)
+  - 同一个bean在三方和本项目都有，解析顺序：第三方、本项目；beanFactory默认后注册的Bean会覆盖先注册的bean[springBoot默认不可覆盖]；
+  - 为保证本项目优先级，ImportSelector接口改为DeferredImportSelector，会先解析本项目的配置类；同时保证不会重复注册报错，需要在三方配置添加注解@ConditioanalOnMissingBean注解，即本项目没有时自动配置类第三方bean才生效；
+  - ![image-20230724224402006](spring原理mac-photos/image-20230724224402006.png)
+  - ![image-20230724224450182](spring原理mac-photos/image-20230724224450182.png)
+  - ![image-20230724224602921](spring原理mac-photos/image-20230724224602921.png)
+  - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
+- 常见的自动配置类学习AOP
+  - ![image-20230724230010394](spring原理mac-photos/image-20230724230010394.png)
+  - 第二步会添加常见的后处理器；matchIfMissing 缺失了也满足；
+  - ![image-20230724230453378](spring原理mac-photos/image-20230724230453378.png)
 
 
 
@@ -1036,7 +1049,7 @@ wrapIfNecessary:是否有必要创建代理
 
 
 
-#### ==//后面补充学习下spring事务的递归回滚==
+#### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；
 
 
 
