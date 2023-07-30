@@ -1038,18 +1038,74 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230724224450182](spring原理mac-photos/image-20230724224450182.png)
   - ![image-20230724224602921](spring原理mac-photos/image-20230724224602921.png)
   - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
-- 常见的自动配置类学习AOP
+- 常见的自动配置类学习---AOP
   - ![image-20230724230010394](spring原理mac-photos/image-20230724230010394.png)
-  - 第二步会添加常见的后处理器；matchIfMissing 缺失了也满足；
+  
+  - 第二步会添加常见的后处理器；
+  
+  - 下方红色框内的四个注解是AopAutoConfiguration带来的；
+  
   - ![image-20230724230453378](spring原理mac-photos/image-20230724230453378.png)
+  
+  - AopAutoConfiguration源码解析
+  
+    - 用了很多注解来实现if else；   @ConditionalOnproperty：条件满足才导入该类，@ConditionalOnClass等则类似；matchIfMissing 缺失了也满足；
+    - ![image-20230730143118404](spring原理mac-photos/image-20230730143118404.png)
+  
+    - ![image-20230730142648761](spring原理mac-photos/image-20230730142648761.png)
+    - ==ps：这里的默认配置指的是当前测试类，不是spring默认配置了；==
+    - 两个@ConfiditonOnProperty的配置的他加你相反，可以理解为if else;
+    - 补充：@EnableAspectJAutoProxy的本质是使用@Import注解进行配置导入，的作用是添加一个自动代理创建器；接口ImportBeanDefinitionRegistrar以编程的方式把bean的beanDefinition加入到容器；
+    - 看一眼容器的代理配置
+      - ![image-20230730143413469](spring原理mac-photos/image-20230730143413469.png)
 
+- 常见的自动配置类学习---DataSource  Mybatis  事务  MVC
+  - 测试代码：
+    - ![image-20230730151116160](spring原理mac-photos/image-20230730151116160.png)
+    - ![image-20230730151045527](spring原理mac-photos/image-20230730151045527.png)
+    - ![image-20230730153351805](spring原理mac-photos/image-20230730153351805.png)
+  - 自动配置——dataSource;  DataSourceAutoConfiguration
+    - DataSourceBean的配置需要 数据库url 用户名 密码等；
+    - DataSourceAutoConfiguration会选择哪个实现类？
+      - 看代码条件可以知道，一般会是HikariDatSource
+      - 是否有基于连接池的数据源：一般有HikariDatasource； mybatis jar包，下面 有jdbc jar包，下面有HikariCp；
+      - ![image-20230730152957909](spring原理mac-photos/image-20230730152957909.png)
+      - ![image-20230730151724369](spring原理mac-photos/image-20230730151724369.png)
+    - DataSource获取url等配置信息
+      - @EnableConfigurationProperties会注册后处理器以支持绑定，属性为 DataSourceProperties.class表示会创建该对象，会绑定键值信息——以spring.datasource打头；在创建dataSource的时候会用到；
+      - ![image-20230730152325700](spring原理mac-photos/image-20230730152325700.png)
+      - ==工厂方法[一般是指带有@Bean注解吗？]可以依据类型去容器找实现类？？==
+      - ![image-20230730152737350](spring原理mac-photos/image-20230730152737350.png)
+  -  自动配置——Mybatis
+    - SqlSessinFactory.class   SqlSessionFactoryBean.class 这两个类在Mybatis的jar包中有；
+    - @AutoConfigureAfter表明了bean注入的先后顺序， mybatis的sqlSession需要DataSource
+    - MbatisAutoConfiguration会选择哪个实现类？或者提供哪些bean?
+      - 有SqlSessionFactory   SqlSessionTemplate  MapperScannerRegistrarNotFoundConfiguration
+      - ![image-20230730160957368](spring原理mac-photos/image-20230730160957368.png)
+      - SqlSessionTemplate[spring mybatis整合要用的]是sqlSession的一个实现类，而且实现了线程绑定，即一个线程共用一个SqlSession;
+        - mapper由MapperFactoryBean生产，里面的getObject  生成mapper对象用的sqlSession就是SqlSessionTemplate；
+      - ![image-20230730164030954](spring原理mac-photos/image-20230730164030954.png)
+      - ![image-20230730164342670](spring原理mac-photos/image-20230730164342670.png)
+      - AutoConfigMapperScannerRegistrar会依据mapper接口类型，将mapper接口[带有@Mapper注解的接口]封装成MapperFactoryBean.class，然后作为beanDefinition加入beanFactory;
+        - 使用时要指定包名；
+        - AutoConfigurationPackages可以用来记录引导类的包名[register的第二个入参]，后面用来确定扫描范围；
+        - ![image-20230730170207529](spring原理mac-photos/image-20230730170207529.png)
+    - 如何获取Mybatis创建bean需要的配置信息？
+      - @EnbaleConfigurationProperties(MybatisProperties.class)会创建MybatisProperties对象，并绑定键值信息——以mybatis打头；
+    - 题外话：@SpringBoot注解
+      - @AutoConfigurationPackage：导入自动配置；里面的@AutoConfigurationPackage注解就会记录前面提到的引导类的包名；
+      - @Component：组件扫描，@Component @Service @Controller  ;
+      - @SpringBootConfiguration表明这是个配置类；
+  -  自动配置——DataSourceTransactionManagerAutoConfiguration[事务管理器]、TransactionAutoConfiguration[事务的三大组件：切面 切点 通知]
+    - MbatisAutoConfiguration会选择哪个实现类？或者提供哪些bean?
+      - transactionManager[事务管理器]、transactionAdvisor[切面：切点+通知]、transactionAttributeSource[切点]、transactionInterceptor[环绕通知];   剩下几个略，不大重要；
+    - ![image-20230730171945529](spring原理mac-photos/image-20230730171945529.png)
+    - ![image-20230730172328983](spring原理mac-photos/image-20230730172328983.png)
+    - 
 
+下周的任务，优先的就三级表头    测算器   宁波的；
 
-
-
-
-
-#### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；
+#### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
 
 
