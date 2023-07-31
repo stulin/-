@@ -1096,14 +1096,23 @@ wrapIfNecessary:是否有必要创建代理
       - @AutoConfigurationPackage：导入自动配置；里面的@AutoConfigurationPackage注解就会记录前面提到的引导类的包名；
       - @Component：组件扫描，@Component @Service @Controller  ;
       - @SpringBootConfiguration表明这是个配置类；
-  -  自动配置——DataSourceTransactionManagerAutoConfiguration[事务管理器]、TransactionAutoConfiguration[事务的三大组件：切面 切点 通知]
+  -  自动配置——DataSourceTransactionManagerAutoConfiguration[事务管理器]、TransactionAutoConfiguration[事务的三大组件：切面 切点 通知]   //了解即可
     - MbatisAutoConfiguration会选择哪个实现类？或者提供哪些bean?
       - transactionManager[事务管理器]、transactionAdvisor[切面：切点+通知]、transactionAttributeSource[切点]、transactionInterceptor[环绕通知];   剩下几个略，不大重要；
     - ![image-20230730171945529](spring原理mac-photos/image-20230730171945529.png)
     - ![image-20230730172328983](spring原理mac-photos/image-20230730172328983.png)
-    - 
+  - 自动配置——MVC  (了解就好）
+    - ![image-20230731223629435](spring原理mac-photos/image-20230731223629435.png)
+    - ![image-20230731223452546](spring原理mac-photos/image-20230731223452546.png)
+    - 四个自动配置类  会选择哪个实现类？或者提供哪些bean?
+      - tomcatServletWebServerFactory :  内嵌的tomcat
+        - ![image-20230731222817660](spring原理mac-photos/image-20230731222817660.png)
+      - ​    dispatcherServlet:里面用了WebMvcProperties.class用来绑定springMVC打头的键值
+        - ![image-20230731223031391](spring原理mac-photos/image-20230731223031391.png)
+      - diapatcherServletRegistration : 注册用的bean
+      - 其它相对重要的还有：Adapter结尾的、mapping结尾的、带有exception的、basicErrorController
 
-下周的任务，优先的就三级表头    测算器   宁波的；
+P153
 
 #### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
