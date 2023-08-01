@@ -1058,7 +1058,6 @@ wrapIfNecessary:是否有必要创建代理
     - 补充：@EnableAspectJAutoProxy的本质是使用@Import注解进行配置导入，的作用是添加一个自动代理创建器；接口ImportBeanDefinitionRegistrar以编程的方式把bean的beanDefinition加入到容器；
     - 看一眼容器的代理配置
       - ![image-20230730143413469](spring原理mac-photos/image-20230730143413469.png)
-
 - 常见的自动配置类学习---DataSource  Mybatis  事务  MVC
   - 测试代码：
     - ![image-20230730151116160](spring原理mac-photos/image-20230730151116160.png)
@@ -1111,8 +1110,23 @@ wrapIfNecessary:是否有必要创建代理
         - ![image-20230731223031391](spring原理mac-photos/image-20230731223031391.png)
       - diapatcherServletRegistration : 注册用的bean
       - 其它相对重要的还有：Adapter结尾的、mapping结尾的、带有exception的、basicErrorController
+- spring自动配置原理解析
+  - @EnableAutoCOnfiguration中使用@Import注解，导入相关配置；接下来的内容和前面学的自动配置原理一致，在selectImports方法中，从springFactory中读取指定的key对应的配置类列表，注册到spring容器，不同的是这里的key用的是EnableAutoConfiguration.class；
+  - ![image-20230801200623628](spring原理mac-photos/image-20230801200623628.png)
+  - ![image-20230801201547845](spring原理mac-photos/image-20230801201547845.png)
 
-P153
+#### 第三十二讲：条件装配底层
+
+- matches方法可以提供一些必要的信息，如通过context获取beanFactory信息，metadata获取类的注解信息；
+- ClassUtils.isPresent 判断类路径下是否存在某个类；
+- 就是@Conditonal + 一个实现了condition接口的类；
+- 例子
+  - ![image-20230801203113698](spring原理mac-photos/image-20230801203113698.png)
+- 改进：是否存在的具体类名抽成变量；存在和不存在可以整合；参考@ConditionOnBean自己定义一个注解整合@Condition和指定的类
+  - getAnnotationAttributes获取关联类的注解的属性信息，入参：注解的类名
+  - ![image-20230801205054348](spring原理mac-photos/image-20230801205054348.png)
+
+P156
 
 #### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
