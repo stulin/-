@@ -1126,11 +1126,81 @@ wrapIfNecessary:是否有必要创建代理
   - getAnnotationAttributes获取关联类的注解的属性信息，入参：注解的类名
   - ![image-20230801205054348](spring原理mac-photos/image-20230801205054348.png)
 
-P156
+### 第四十三讲Factory Bean
+
+- 工厂Bean要实现三个方法，getObjectType 返回产品类型[依据类型获取时用到]； isSingleton  单例还是多例； getObject 提供产品对象； 
+  - context.getBean(name)，name传工厂类的bean名字，但是取到的确是产品对象；
+  - 获取工厂对象本身，依据类型获取，或者name传 &name
+  - ![image-20230806135901239](spring原理mac-photos/image-20230806135901239.png)
+- 工厂的产品只会部分受spring管理；
+  - 通过facttoryBean创建 产品，因为用的new Bean1()即构造方法，所以Bean1中的注解不生效；容器的前处理器检测到不到产品，但是==后处理器可以检测到==；
+  - 产品如果单例不会入beanFactory的单例池，会有另外一个集合存放产品的单例池；
+  - ![image-20230806140333914](spring原理mac-photos/image-20230806140333914.png)
+  - ![image-20230806135945477](spring原理mac-photos/image-20230806135945477.png)
+  - ![image-20230806140003735](spring原理mac-photos/image-20230806140003735.png)
+- ![image-20230806140444287](spring原理mac-photos/image-20230806140444287.png)
+
+### 第四十四讲 @Indexed的原理
+
+- 作用：编译阶段就实现扫描，减少扫描时间
+- spring5.0之后，scan方法在找不到spring.components文件的情况下，才会真正去做包扫描
+  - target--classes--META-INF，spring.components文件
+  - spring.components生成的条件，添加依赖
+    - 编译阶段，去找类是否有@Indexed注解[@Coponent注解中有]
+    - ![image-20230806141841424](spring原理mac-photos/image-20230806141841424.png)
+- ![image-20230806142037745](spring原理mac-photos/image-20230806142037745.png)
+
+### 第四十五讲  spring代理的特点(结合代理的AOP模式讲解)
+
+- 依赖追和初始化影响的时原始对象； 生成代理对象之后，切点才会生效；
+  - 下面==目标对象==初始化时自动调用set init方法不会被增强，==代理对象==的手工调用会增强；
+  - ![image-20230806151914555](spring原理mac-photos/image-20230806151914555.png)
+  - ![image-20230806151930135](spring原理mac-photos/image-20230806151930135.png)
+  - ![image-20230806151953223](spring原理mac-photos/image-20230806151953223.png)
+- 代理对象和目标对象并不公用属性
+  - spring单例池中只存代理对象，不存目标对象；要获取目标对象，需要先转换为Adivised接口；
+    - ![image-20230806152513842](spring原理mac-photos/image-20230806152513842.png)
+  - 初始化时进行了依赖呼入和init的时目标对象；  代理对象的getBean2  isInitialized等方法底层调用的还是目标对象的属性；
+    - ![image-20230806153158011](spring原理mac-photos/image-20230806153158011.png)
+  - static方法  final方法  private方法 无法被增强，只有可以被重写的方法能被增强；
+    - ![image-20230806153755056](spring原理mac-photos/image-20230806153755056.png)
+
+### 第四十六讲 @Value注入底层（结合第四讲学习）
+
+- @Value注解的解析，表达式中 占位符的解析
+  - resolver.getSuggestedValue获取@Value注解中的内容； 入参：成员变量[或成员方法]的描述、变量是否是必须的；
+  - environment().resolvePlaceholders(value) 解析
+  - ![image-20230806171543094](spring原理mac-photos/image-20230806171543094.png)
+- age除了 解析，还需要多一步类型转换，因为解析的结果是字符串
+  - ![image-20230806172112314](spring原理mac-photos/image-20230806172112314.png)
+- 表达式中为spring EL表达式，即#打头； 要用getbeanExpressionResulver().evaluate，入参： 原始值，expressionContext，null；
+  - ![image-20230806211847852](spring原理mac-photos/image-20230806211847852.png)
+  - ![image-20230806211855504](spring原理mac-photos/image-20230806211855504.png)
+- 同时包含${}    #{}
+  - 函数用上面的test3即可；
+  - ![image-20230806212414140](spring原理mac-photos/image-20230806212414140.png)
+
+### 第四十七讲：@Autowired注入底层（结合第四讲学习）
+
+- 示例代码
+  - ![image-20230806212640414](spring原理mac-photos/image-20230806212640414.png)
+  - ![image-20230806212653927](spring原理mac-photos/image-20230806212653927.png)
+- 获取依赖的四种情况， 属性、方法参数
+  - 方法参数的descriptor还要指定方法的哪个参数；==dependencyDescriptor用来描述内嵌的类型，increaseNestingLevel；如场景3 4==
+  - doResolveDependency [去容器中找依赖的对象实例]入参：descriptor[成员变量还是成员方法] beanName null
+  - ![image-20230806214704298](spring原理mac-photos/image-20230806214704298.png)
+  - ![image-20230806215608029](spring原理mac-photos/image-20230806215608029.png)
+  - ObjectFactory和Optional的不同，objectFactory在有人调用getObject时才会去容器中找 产品对象，即有推迟初始化；故这里在工厂内部解析依赖
+    - ![image-20230806215637550](spring原理mac-photos/image-20230806215637550.png)
+- @Lazy  创建一个代理对象，当真正调用目标对象方法时，才初始化目标对象，类似FactoryBean
+  - 使用了@Lazy，就不推荐直接用doResolveDependency 取目标对象了，可以用getLazyResolutionProxyIfNecessary   [有@Lazy注解会创建代理]
+  - ![image-20230806220449941](spring原理mac-photos/image-20230806220449941.png)
+
+P164
 
 #### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
-
+ 
 
 //tips:.if;  ctrl+alt+v；   a instanceof AClass  aClass.if;   List.of;  ==CTRL+F  chrome不走缓存访问服务器==；F12-->禁用缓存； 接口-->右键-->find usages;  ctrl+alt+左键直接到实现类；  idea右边右键文件，copy path,  reference；
 
