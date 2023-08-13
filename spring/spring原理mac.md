@@ -1196,7 +1196,55 @@ wrapIfNecessary:是否有必要创建代理
   - 使用了@Lazy，就不推荐直接用doResolveDependency 取目标对象了，可以用getLazyResolutionProxyIfNecessary   [有@Lazy注解会创建代理]
   - ![image-20230806220449941](spring原理mac-photos/image-20230806220449941.png)
 
-P164
+- doResolveDependency原理解析
+  - @Autowired  @Value最终都会调用doResolveDependency；
+  - 解析依赖数组
+    - ![image-20230807194224969](spring原理mac-photos/image-20230807194224969.png)
+    - beannamesForTypeIncludingAncestors：查找当前容器及其祖先容器中所有类型为type的对象的beanName；
+  - 解析依赖的List
+    - 和数组类似，但是这里获取元素类型改用 getResolvableType().getGeneric()  不指定第几个泛型参数默认第一个；
+    - ![image-20230807204756673](spring原理mac-photos/image-20230807204756673.png)
+  - 解析依赖的特殊类型：如ApplicationContext的子接口，还有下图红圈的四个类型
+    - 最终的成品的bean其实放在DefaultListableBeanFactory的父类DefaultSingletonBeanRegistry类的属性singletonObjects中，但特殊的类型放在resoleableDependencies   key为类型，value为特殊对象；在调用ApplicationContext的Refresh方法时添加
+    - ![image-20230807205600043](spring原理mac-photos/image-20230807205600043.png)
+    - 下面红圈多了一个key是否为指定类型的子类的判断：
+    - ![image-20230807210109667](spring原理mac-photos/image-20230807210109667.png)
+    - ![image-20230807210046844](spring原理mac-photos/image-20230807210046844.png)
+  - 解析依赖的特殊类型：实现了接口且接口包含泛型信息，要精准定位到泛型对对应的类，如这里想精确定位到Dao<Teacher>；
+    - getMergedBeanDefinition获取bd包含泛型信息[dd4中也有泛型信息]，resolver的isAutowreCandidate方法对比泛型信息是否匹配
+    - ![image-20230813150810014](spring原理mac-photos/image-20230813150810014.png)
+    - ![image-20230813150918161](spring原理mac-photos/image-20230813150918161.png)
+  - 解析依赖：依据Qualifier名字匹配，检查Qualifier名字和@Component中名字是否一致；适用一个接口有多个实现类时的精确定位，如这里要精确定位到Service2；
+    - resolver的isAutowreCandidate方法解析@Qualifier注解，对比 名字和dd5中是否一致；
+    - ![image-20230813154454276](spring原理mac-photos/image-20230813154454276.png)
+    - ![image-20230813154538456](spring原理mac-photos/image-20230813154538456.png)
+    - ![image-20230813154553773](spring原理mac-photos/image-20230813154553773.png)
+  - 解析依赖：包含@Primary注解，和@Qualifier类似，解决一个接口多个实现类的精确定位问题
+    - ![image-20230813155418141](spring原理mac-photos/image-20230813155418141.png)
+  - 解析依赖：如果没有@qualifier  @Primary  会优先选择和变量名匹配的，优先级@qualifier>  @Primary > 成员变量名字
+    - ![image-20230813155653419](spring原理mac-photos/image-20230813155653419.png)
+
+### 第四十八讲：事件-监听器
+
+- 常用于 业务代码的解耦；
+- 例：主线业务  与 发送短信  发送邮件 解耦；使用ApplicationListener监听；
+  - ![image-20230813162602383](spring原理mac-photos/image-20230813162602383.png)
+  - ![image-20230813162529110](spring原理mac-photos/image-20230813162529110.png)
+  - ![image-20230813162513973](spring原理mac-photos/image-20230813162513973.png)
+- 使用@EventListener监听  + 异步处理
+  - SimpleApplicationEvenMulticaster可以在线程池发布事件，即多线程发布
+  - ApplicationEventPublisher底层用了applicationEventMulticaster  bean发布事件，默认单线程；自定义多线程发布的  bean的名字必须叫applicationEventMulticaster
+  - ![image-20230813164144368](spring原理mac-photos/image-20230813164144368.png)
+  - ![image-20230813164120530](spring原理mac-photos/image-20230813164120530.png)
+  - ![image-20230813164321895](spring原理mac-photos/image-20230813164321895.png)
+- @EventListener原理
+  - 本质还是借助ApplicationListener实现； context找到带有@EventListener注解的所有方法，创建ApplicationListener对象[内部反射调用业务代码相关方法]，并将生成的ApplicationListener添加到context中；    本质上：这里创建ApplicationListener时一个适配器模式的应用；
+  - ![image-20230813171125057](spring原理mac-photos/image-20230813171125057.png)
+  - ![image-20230813171207931](spring原理mac-photos/image-20230813171207931.png)
+  - 优化：接受到自定义的MyEvnet事件才反射调用，不对其它的事件[如容器关闭]做出错误反应；
+    - 
+
+摇手机  棉球 洗衣服 快递；  ==宁波那边是否提供一份初始化要查的数据列表，方便投产验证；==
 
 #### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
