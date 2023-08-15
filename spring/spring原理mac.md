@@ -1242,7 +1242,10 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230813171125057](spring原理mac-photos/image-20230813171125057.png)
   - ![image-20230813171207931](spring原理mac-photos/image-20230813171207931.png)
   - 优化：接受到自定义的MyEvnet事件才反射调用，不对其它的事件[如容器关闭]做出错误反应；
-    - 
+    - ![image-20230815123536346](spring原理mac-photos/image-20230815123536346.png)
+  - 扩展：对所有的bean作此操作；同时添加监听器的代码封装为一个方法，使用接口：SmartInitializingSingleton，会在所有单例初始化时被回调，在refresh中执行；
+    - ![image-20230815124413881](spring原理mac-photos/image-20230815124413881.png)
+    - ![image-20230815124352494](spring原理mac-photos/image-20230815124352494.png)
 
 摇手机  棉球 洗衣服 快递；  ==宁波那边是否提供一份初始化要查的数据列表，方便投产验证；==
 
