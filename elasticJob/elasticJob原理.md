@@ -61,8 +61,28 @@ UI界面：进程和作业的管控 连接数据源查询作业的历史执行�
 
 #### 代码示例
 
-- 水平扩展
+- 水平扩展，例  对于dataFlow任务，取模的方式每个人处理一部分数据；
+  - ![image-20230818194412547](elasticJob原理-photos/image-20230818194412547.png)
 
+### 3.0版本的改进
 
+- 2.1.5版本   作业类型 SimpleJobExecutor  DataflowJobExecutor ScriptJobExecutor 无法扩展，3.0.0抽象出顶层作业类型  Classed类型需要 自己编写业务逻辑，Typed类型需要提供配置和参数 ，使用java的spi机制注入;
+- 3.0版本的触发不限于cron表达式，jobbootstrap接口，OneOffJobBootstrap 一次性启动器；节点像注册中心写入trigger标志，等listener接收；
+  - ![image-20230818203441381](elasticJob原理-photos/image-20230818203441381.png)
+- 3.0版本，抽离了很多模块，方便扩展
+  - ![image-20230818203729336](elasticJob原理-photos/image-20230818203729336.png)
+- 新增Spring Boot Starter支持；
+  - ![image-20230818204051091](elasticJob原理-photos/image-20230818204051091.png)
+
+#### ShardingSphere Scaling :
+
+- 弹性迁移的能力
+- 例如：二分库  扩展到  三分库
+  - ![image-20230818204244070](elasticJob原理-photos/image-20230818204244070.png)
+- 流程：
+  - 第一阶段  准备：数据源检查  存量数据统计  准备迁移任务  拆分；第二阶段 存量数据迁移[迁移过程 不停机]：第三阶段 ：迁移过程的增量数据进行迁移；第四阶段 规则切换：业务数据流量从旧业务集群迁移到新业务集群；
+  - ![image-20230818204618320](elasticJob原理-photos/image-20230818204618320.png)
+- 数据迁移的数据量很大，为了提高效率需要水平扩展的能力，elasticJob 水平扩展  高可用能力，通过切片拆分迁移任务；elasticJob是scaling的核心调度引擎；
+- ![image-20230818205008704](elasticJob原理-photos/image-20230818205008704.png)
 
 ### zookeeper也得学！！！！是如何保证只执行一次的？java调度工具 coursre?
