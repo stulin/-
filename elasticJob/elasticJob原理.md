@@ -85,4 +85,8 @@ UI界面：进程和作业的管控 连接数据源查询作业的历史执行�
 - 数据迁移的数据量很大，为了提高效率需要水平扩展的能力，elasticJob 水平扩展  高可用能力，通过切片拆分迁移任务；elasticJob是scaling的核心调度引擎；
 - ![image-20230818205008704](elasticJob原理-photos/image-20230818205008704.png)
 
+
+
+![image-20230824201326319](elasticJob原理-photos/image-20230824201326319.png)
+
 ### zookeeper也得学！！！！是如何保证只执行一次的？java调度工具 coursre?
