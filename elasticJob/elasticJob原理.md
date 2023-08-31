@@ -1,3 +1,23 @@
+#### apache玩法
+
+- github
+  - 先followhttps://github.com/apache?q=&type=all&language=&sort=stargazers
+  - apache项目组stars数前10的技术是不是都要学习下，然后关注下最新的技术
+  - ==仔细学一个大佬主导的开源的组件，相比对编程水平也能有很大的提升；==  
+  - ==在软件某个小领域能有所成就就很厉害了（有想象力，应用场景无限）：通过会议了解到自己感兴趣的项目，通过项目接触到优秀的社群和优秀的程序员；==
+    - ==很想找个确实感兴趣的项目[有意义的，最好是新一点的项目]，参与下维护，可能是离技术大牛共事的机会==
+  - 关注一个google或微软的程序员【看看人家的技术栈   facebook、ins都行】；  昨天填的问卷其实也给了自己很多启发，学习的维度  技术 业务  行内组件的实践教程；
+
+#### 会议梳理
+
+-   ==之前看到的apache的会议 CommunityOverCode Asia(原 ApacheCon Asia)==
+- 全球软件研发技术大会 //看起来一般，应用层面扯皮居多，开源关注几个自己感兴趣的应用即可
+
+#### 社群梳理
+
+- https://baijiahao.baidu.com/s?id=1640119681687893558&wfr=spider&for=pc
+- https://outofmemory.cn/langs/8868288.html
+
 参考资料：https://www.bilibili.com/video/BV1BQ4y127Fp/?spm_id_from=333.337.search-card.all.click&vd_source=8bd5ab544d4cb8d9821752b68ce53b11
 
 ### ElasticJob
