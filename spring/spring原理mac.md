@@ -52,27 +52,28 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 ![image-20230205164002835](spring原理-photos/image-20230205164002835.png)
 
-处理国际化资源的能力：MessageSource: context.getMessage() ； 依据key找到不同版本翻译结果，一般在messages打头的文件(不同语言的资源信息)；浏览器的请求头提供请求的语言类型；
+- 处理国际化资源的能力：MessageSource: context.getMessage() //入参：要翻译的对象，null，要翻译的语言 ； 依据key找到不同版本翻译结果，一般在messages打头的文件(不同语言的资源信息)；
+  - 浏览器的请求头提供请求的语言类型；
 
 ![image-20230202204706856](spring原理-photos/image-20230202204706856.png)
 
+![image-20230903125353266](spring原理mac-photos/image-20230903125353266.png)
 
 
-​	通配符  获取资源（磁盘路径对应的资源）的能力：getResources()   //在jar包里面也查找：calsspath*:....
+
+- 通配符  获取资源（磁盘路径对应的资源）的能力：getResources()   //仅在类路径下找：classpath:....在jar包里面也查找：calsspath*:....
 
 ![image-20230205172101764](spring原理-photos/image-20230205172101764.png)
 
+- getEvironment: 获取环境变量（系统环境变量等）  application.properties等；
 
+- 发布事件对象 (本质上是一种解耦方式，如用户注册后 发短信、发邮件等需要切换，为什么不直接调某个方法呢？直接调用一对一，发布事件是一对多，可以让多方自主选择操作内容；可以对标下AOP看哪个更优雅？)：context.pushlishEvent()发布事件，pushlishEvent ，入参 事件源要继承ApplicationEvent；事件监听器  参数和入参一致，@EventListener
 
-getEvironment: 获取环境信息（系统环境变量等）
+![image-20230903164721150](spring原理mac-photos/image-20230903164721150.png)
 
-发布事件对象 (本质上是一种解耦方式，如用户注册后 发短信、发邮件等；可以对标下AOP看哪个更优雅？)：pushlishEvent ，入参 事件源要继承ApplicationEcent； 接收时间  参数和入参一直，@EventListener
+![image-20230903130939734](spring原理mac-photos/image-20230903130939734.png)
 
-![image-20230205225338111](spring原理-photos/image-20230205225338111.png)
-
-//单例+发送事件；
-
-![image-20230205230310058](spring原理-photos/image-20230205230310058.png)
+//单例+发送事件；  
 
 ![image-20230205230425861](spring原理-photos/image-20230205230425861.png)
 
@@ -80,35 +81,27 @@ getEvironment: 获取环境信息（系统环境变量等）
 
 #### BeanFactory实现 //默认实现DefaultListableBeanFactroy 是一个核心的spring容器？  bean的定义，BeanFactory会依据定义创建对象
 
-//容器默认为空，往容器添加也给bean定义(先设置BeanDefinitin--类名、生命周期；然后注册bean--设置bean名字)；
+- 容器默认为空，
+  - 若要添加bean需要：先创建bean定义(class scope 初始化  销毁)；然后注册bean（包括设置bean名字）；
+  - 不会主动调用beanFactory后处理器，不会主动添加bean后处理器
+    - 并不会去解析例如@Autowired注解；@Resource注解//javaee的注解；添加了BeanFactory后处理器[register扩展功能]并执行[postProcess，或者称为建立联系]之后，才会去解析对应注解；//BeanFactory后处理的主要功能，补充了一些bean定义，
+    - 并不会去解析如@Bean @Configuration注解；获取了BeanPostProcessor并执行addBeanPostProcessor建立后处理和BeanFactory的联系，而后创建bean才会执行后处理器，去解析对应注解 //Bean后处理器，针对ean生命周期的各个阶段提供扩展，
+  - 不会主动初始化单例：bean创建对象的时机：初始化的时候只会保存bean的定义、描述信息到beanFactory，当第一次用的时候，才会真正创建实例； 单例对象如果希望初始化时创建所有的单例对象，可以使用preInstantiateSingletons()：
+  - //不会解析${}与#{}
+  - //applicationContext会把上面这些常用的初始化操作都直接封装好；
+  - bean后处理器的排序：
+    - @autowired，bean容器中找实现类，依据类型[类或接口]匹配，有多个的时候[可以用qualifier指定？]会再匹配名字：即成员变量名字和类名，匹配上优先；@Resource对于多个的情况则可以用name属性指定名字； 
+    - 优先级：如果同时有@Autowired  @Resource，哪个会生效
+    - 默认优先级[优先级高的生效]@Autowired > @Resource，依据是后处理器添加的事件；可以用比较器控制优先级顺序，如 registerAnnotationConfigProcessors 排序依据为后处理器对象getOrder方法的返回值[后处理器通常会实现order接口]，数字小的排前面//同时使用两个注解时;
+    - 为什么sorted之后顺序会变？？和register一样的比较器啊？除非register只是进行了比较器的初始化，并没有把它用于排序，即执行；
 
 ![image-20230205232232567](spring原理-photos/image-20230205232232567.png)
 
-原始的beanFactory并不会去解析注解，添加了后处理器[register扩展功能]并执行[postProcess/addBean....，或者称为建立联系]之后，会去解析注解，
-
 ![image-20230205233200331](spring原理-photos/image-20230205233200331.png)
-
-BeanFactory后处理的主要功能，补充了一些bean定义，如@Bean @Configuration注解；
-
-
-
-Bean后处理器，针对ean生命周期的各个阶段提供扩展，解析例如@Autowired注解；@Resource注解//javaee的注解
 
 ![image-20230206230400978](spring原理-photos/image-20230206230400978.png)
 
-
-
-bean创建对象的时机：初始化的时候只会保存bean的定义、描述信息到beanFactory，当第一次用的时候，才会真正创建实例； 单例对象如果希望初始化时创建所有的单例对象，可以使用preInstantiateSingletons()：
-
 ![image-20230206231511602](spring原理-photos/image-20230206231511602.png)
-
-applicationContext会把上面这些常用的初始化操作都直接封装好；
-
-
-
-beanFactory的排序：
-
-@autowired，bean容器中找实现类；有多个的时候[可以用qualifier指定？]会匹配成员变量名字和类名，匹配上优先；@Resource可以用name属性指定； 
 
 
 
@@ -116,11 +109,7 @@ beanFactory的排序：
 
 ![image-20230206232848214](spring原理-photos/image-20230206232848214.png)
 
-优先级[优先级高的生效]@Autowired > @Resource，可以用比较器控制先后顺序，排序依据实现order接口的getOrder方法的返回值，数字小的排前面//同时使用两个注解时;
-
 ![image-20230206234006952](spring原理-photos/image-20230206234006952.png)
-
-为什么sorted之后顺序会变？？和register一样的比较器啊？除非register只是进行了比较器的初始化，并没有把它用于排序，即执行；
 
 #### ApplicationContext的常见实现和用法
 
