@@ -40,7 +40,7 @@ ApplicationContext继承了BeanFactory; BeanFactory[里面有SingletonObjects]�
 
 #### 2.BeanFactory的功能(要看有哪些方法和实现哪些接口、还有成员变量可以有很多方法)//ctrl+F12看方法？ uml :选中+F4
 
-默认实现类  DefaultListableBeanFactory，可以管理所有Bean; 实现类中的DefaultSignletomBeanRegistry管理单例对象，可以反射查看所有单例；//下面的singletonObjects.get()里面的入参是什么情况？?也是个对象 说明beanFactory也是个单例对象，且保存在singletonObject中；看看 反射查看私有属性的示例代码？？
+BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean; 实现类中的DefaultSignletomBeanRegistry管理单例对象，可以反射查看所有单例；//下面的singletonObjects.get()里面的入参是什么情况？?也是个对象 说明beanFactory也是个单例对象，且保存在singletonObject中；看看 反射查看私有属性的示例代码？？
 
 ![image-20230205165940508](spring原理-photos/image-20230205165940508.png)
 
@@ -1242,7 +1242,25 @@ wrapIfNecessary:是否有必要创建代理
   - ![image-20230813171125057](spring原理mac-photos/image-20230813171125057.png)
   - ![image-20230813171207931](spring原理mac-photos/image-20230813171207931.png)
   - 优化：接受到自定义的MyEvnet事件才反射调用，不对其它的事件[如容器关闭]做出错误反应；
-    - 
+    - ![image-20230815123536346](spring原理mac-photos/image-20230815123536346.png)
+  - 扩展：对所有的bean作此操作；同时添加监听器的代码封装为一个方法，使用接口：SmartInitializingSingleton，会在所有单例初始化时被回调，在refresh中执行；
+    - ![image-20230815124413881](spring原理mac-photos/image-20230815124413881.png)
+    - ![image-20230815124352494](spring原理mac-photos/image-20230815124352494.png)
+
+#### 第四十九讲：实现一个事件发布器
+
+- 需要实现  接口：ApplicationEventMulticaster ，这里用一个抽象类作为中介，抽象类实现所有方法，但是方法体都为空；
+- 我们只实现两个方法即可：收集监听器，发布事件；如何触发Listener的回调，只需要调用listener.onAPplicationEcent()方法即可
+  - ![image-20230815194442382](spring原理mac-photos/image-20230815194442382.png)
+  - addApplicationListenerBean 入参可以获取到listener的beanName，大概率是因为回调的逻辑是优先回调实现类；
+- 发布事件钱要判断下，当前的事件和监听器  发布接口的入参是否匹配，不匹配的话强制调用会出错
+  - GenericApplicationListener：是ApplicationListener的子接口，有一个supportEvent方法；
+  - ![image-20230815200157502](spring原理mac-photos/image-20230815200157502.png)
+  - ![image-20230815200016750](spring原理mac-photos/image-20230815200016750.png)
+  - 改进：多线程发布
+    - 发布时以多线程发布即可
+    - ![image-20230815201138478](spring原理mac-photos/image-20230815201138478.png)
+    - ![image-20230815201225215](spring原理mac-photos/image-20230815201225215.png)
 
 摇手机  棉球 洗衣服 快递；  ==宁波那边是否提供一份初始化要查的数据列表，方便投产验证；==
 
