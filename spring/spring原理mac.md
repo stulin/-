@@ -83,7 +83,7 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 - 容器默认为空，
   - 若要添加bean需要：先创建bean定义(class scope 初始化  销毁)；然后注册bean（包括设置bean名字）；
-  - 不会主动调用beanFactory后处理器，不会主动添加bean后处理器
+  - 不会主动调用beanFactory后处理器[负责补充Bean定义]，不会主动添加bean后处理器[负责bean生命周期扩展]
     - 并不会去解析例如@Autowired注解；@Resource注解//javaee的注解；添加了BeanFactory后处理器[register扩展功能]并执行[postProcess，或者称为建立联系]之后，才会去解析对应注解；//BeanFactory后处理的主要功能，补充了一些bean定义，
     - 并不会去解析如@Bean @Configuration注解；获取了BeanPostProcessor并执行addBeanPostProcessor建立后处理和BeanFactory的联系，而后创建bean才会执行后处理器，去解析对应注解 //Bean后处理器，针对ean生命周期的各个阶段提供扩展，
   - 不会主动初始化单例：bean创建对象的时机：初始化的时候只会保存bean的定义、描述信息到beanFactory，当第一次用的时候，才会真正创建实例； 单例对象如果希望初始化时创建所有的单例对象，可以使用preInstantiateSingletons()：
@@ -113,25 +113,37 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 #### ApplicationContext的常见实现和用法
 
-- ClassPathXmlApplicationContext  基于xml路径读取配置；通常使用    <context:annotation-config>   标签就会自动加入一些有用的后处理器；
-  -  ![image-20230208215603262](spring原理-photos/image-20230208215603262.png)
-- FileSystemXmlApplicationContext : 基于文件路径读取配置；//绝对路径、相对路径均可
+- 从xml读取bean定义
+  
+  - ClassPathXmlApplicationContext [比价古老]  基于xml路径读取配置；//通常使用    < context:annotation-config/>   标签就会自动加入一些有用的后处理器；
+  - FileSystemXmlApplicationContext : 基于文件路径读取配置；//绝对路径、相对路径均可
+  - xml读取beanDefiniton原理
+    - ApplicationContext是如何把beanDefination信息加载到beanFactory中的：用的XmlBeanDefinitonReader的 loadBeanDefinitions方法，入参可以是ClassPathResource()对象、FileSystemResource()对象；
+  
+- AnnotationConfigApplicationContext[非web环境] : 基于配置类的applicationContext //后处理器会自动加
+
+- AnnotationConfigServletWebServerApplicationContext[web容器]：既支持配置类，又支持内嵌servlet的Web容器---tomcat
+
+  - 这里演示不需要spring启动类就可以构建web环境
+  - spring的web服务器的核心是DispatcherServlet； DispatcherServlet要运行在tomcat服务器中；
+  - WebCOnfig中：前3步必须的[构建内置tomcat，构建dispatcherServlet，建立dipatcherServlet和tomcat容器之间的关联]，controller1可选[这里演示用，选web.servlet.mvc controller]，bean名字/开头并实现Controller就可以作为控制器；
+    - DispatcherServletRegistrationBean入参：路径一般配置/，所有请求都经过dispatcherServlet，再到controller
+
+- 示例代码
+
+  - ![image-20230208215603262](spring原理-photos/image-20230208215603262.png)
+
   - ![image-20230208215718274](spring原理-photos/image-20230208215718274.png)
-- ApplicationContext是如何把beanDefination信息加载到beanFactory中的：用的XmlBeanDefinitonReader的 loadBeanDefinitions方法，入参也可以是ClassPathResource()对象；
+
   - ![image-20230208220500569](spring原理-photos/image-20230208220500569.png)
-- AnnotationConfigApplicationContext : 基于配置类的applicationContext
+
   - ![image-20230212110308969](spring原理-photos/image-20230212110308969.png)
 
-#### 内嵌容器、注册DispatcherServletAnnotationConfigServletWebServerApplicationContext：既支持配置类，又支持内嵌servlet的Web容器---tomcat
-
-- - spring的web服务器的核心是DispatcherServlet； DispatcherServlet要运行在tomcat服务器中；
-  - 路径一般配置/，所有请求都经过dispatcherServlet，再到controller
   - ![image-20230212113647701](spring原理-photos/image-20230212113647701.png)
   - ![image-20230212113533870](spring原理-photos/image-20230212113533870.png)
-  - 前3步必须的[构建内置tomcat，构建dispatcherServlet，建立dipatcherServlet和tomcat容器之间的关联]，controller1可选，bean名字/开头并实现Controller就可以作为控制器；
   - ![image-20230212113738417](spring原理-photos/image-20230212113738417.png)
 
-#### 
+
 
 ### Spring Bean的生命周期
 
@@ -139,11 +151,12 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 ![image-20230212223508800](spring原理-photos/image-20230212223508800.png)
 
- //@Autowired的参数  也会自动注入[值、变量]；
+- 带有@Component注解，所以会被@ComponentScan扫描到； @Autowired的参数  也会自动注入[值、变量]；@Value值注入，来自配置文件；
+- 执行顺序：构造，值注入，初始化，销毁[单例才调用]；
 
 ![image-20230212213754091](spring原理-photos/image-20230212213754091.png)
 
-
+- 自定义类实现部分bean后处理器[bean生命周期  下面的是按执行顺序]：实例化之前[调用构造之前]执行、实例化之后执行、依赖注入阶段执行、初始化方法执行前执行、初始化之后执行、销毁时执行方法；
 
 ![image-20230212225551281](spring原理-photos/image-20230212225551281.png)
 
