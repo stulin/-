@@ -161,8 +161,6 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 ![image-20230212223508800](spring原理-photos/image-20230212223508800.png)
 
-- 
-
 ![image-20230212213754091](spring原理-photos/image-20230212213754091.png)
 
 ![image-20230212225551281](spring原理-photos/image-20230212225551281.png)
@@ -172,8 +170,6 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 ![image-20230212225841324](spring原理-photos/image-20230212225841324.png)
 
 
-
-- 
 
 ![image-20230212232225441](spring原理-photos/image-20230212232225441.png)
 
