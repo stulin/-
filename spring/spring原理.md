@@ -1,4 +1,4 @@
-==//想学代理的玩法==
+=//想学代理的玩法==
 
 //内嵌的tomcat，神策上的代码是否 配置个WebConfig registrationBean能运行web？
 
@@ -175,63 +175,53 @@ beanFactory的排序：
 
 ### 第四章
 
-#### 常见的Bean后处理器//变量注入放在方法里面可以打印； Resolver是为了解析@Value值注入；//掌握下每个后处理器 能解析哪几个注解
+#### 常见的Bean后处理器
 
-//GenericApplicationContext相比AnnotationConfigApplicationContext  ，很干净，没有自动添加 后处理器；
+- GenericApplicationContext相比AnnotationConfigApplicationContext  ，很干净，没添加bean后处理器等；refresh()方法会执行工厂后处理器 初始化单例等；
 
-![image-20230212234621913](spring原理-photos/image-20230212234621913.png)
+- 常见后处理器相关注解：@Autowired @Value；@Resource @PostConstruct @PreDestroy;@ConfigurationProperties注解
 
-![image-20230213224839835](spring原理-photos/image-20230213224839835.png)
+  - registerBean方法默认名称：包名、类名；设置AutowiredCandiateResoulver才能获取@Value注解内部的值注入；
 
-![image-20230212234601021](spring原理-photos/image-20230212234601021.png)
+- tips
 
-![image-20230213224732050](spring原理-photos/image-20230213224732050.png)
+  - ==@Autowired结合方法进行注入，可以打印信息查看是否注入成功；== 
+
+    - ![image-20230907190211419](spring原理-photos/image-20230907190211419.png)
+
+  - Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定；
+
+    //将后处理器加入到容器中
+
+    ![image-20230213230017296](spring原理-photos/image-20230213230017296.png)
+
+- 示例代码
+  - ![image-20230212234621913](spring原理-photos/image-20230212234621913.png)
+  - ![image-20230213224839835](spring原理-photos/image-20230213224839835.png)
+  - ![image-20230212234601021](spring原理-photos/image-20230212234601021.png)
+  - ![image-20230213224732050](spring原理-photos/image-20230213224732050.png)
+  - @ConfigurationProperties注解：前缀+属性名去配置文件中找环境变量
+  - ![image-20230213225036305](spring原理-photos/image-20230213225036305.png)
 
 
-
-@ConfigurationProperties注解：前缀+属性名去配置文件中找环境变量
-
-![image-20230213225036305](spring原理-photos/image-20230213225036305.png)
-
-
-
-
-
-
-
-Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定；
-
-//将后处理器加入到容器中
-
-![image-20230213230017296](spring原理-photos/image-20230213230017296.png)
 
 #### @Autowired bean后处理器执行分析
 
-//registerSingleton方法使用相对简单；但是要提供成品bean，即不再走bean工厂创建流程；
-
-==//直接调用Autowired相关方法的方式，理解Autowired的原理；  第一个参数传null，没有自己手工指定bean中的属性的值==
-
-![image-20230213232635463](spring原理-photos/image-20230213232635463.png)
-
-
-
-![image-20230213231938822](spring原理-photos/image-20230213231938822.png)
-
-![image-20230213232711589](spring原理-photos/image-20230213232711589.png)
-
-**Inject内部做的事情梳理**：
-
-![image-20230219144839839](spring原理-photos/image-20230219144839839.png)
-
-![image-20230219145953099](spring原理-photos/image-20230219145953099.png)
-
-InjectionMeradata保存所有添加@Autowired注解的方法和属性； 
-
- 属性和方法胡被封装为DependencyDescriptor对象  参：成员变量名，是否必须； 
-
-doResolveDependency ---变量名  类型 容器找bean ；//方法的注入，以方法的入参 为单位；
-
-
+- 准备工作
+  - registerSingleton方法使用相对简单[不需要常见BeanDefinition]；但是要提供成品bean，即不再走bean工厂创建流程；
+  - bean后处理器的依赖注入等阶段需要用到beanFactory，所以需要设置；
+- 真正执行@Autowired @Value解析的是postProcessProperties
+  - //直接调用Autowired相关方法的方式，理解Autowired的原理；  第一个参数传null，没有自己手工指定bean中的属性的值==
+  - 找到添加了@autowired注解的方法和属性；inject方法反射赋值；
+    - inject内部实现：
+      -  属性和方法胡被封装为DependencyDescriptor对象  入参：成员变量名，是否必须；////方法的注入，类似，但是多一个参数 表明要注入的是方法的哪一个参数，然后一个一个注入；
+      - beanFactory.doResolveDependency   入参：DependencyDescripor，依据成员变量信息找到类型，进一步找到bean；
+- 示例代码：
+  - ![image-20230213232635463](spring原理-photos/image-20230213232635463.png)
+  - ![image-20230213231938822](spring原理-photos/image-20230213231938822.png)
+  - ![image-20230213232711589](spring原理-photos/image-20230213232711589.png)
+  - ![image-20230219144839839](spring原理-photos/image-20230219144839839.png)
+  - ![image-20230219145953099](spring原理-photos/image-20230219145953099.png)
 
 ### 第五讲 BeanFactory后处理器
 

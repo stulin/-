@@ -181,6 +181,8 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 #### 常见的Bean后处理器//变量注入放在方法里面可以打印； Resolver是为了解析@Value值注入；//掌握下每个后处理器 能解析哪几个注解
 
+- GenericApplicationContext 干净的容器，没添加bean后处理器等；refresh()方法会执行工厂后处理器 初始化单例；
+
 ![image-20230212234621913](spring原理-photos/image-20230212234621913.png)
 
 ![image-20230212234601021](spring原理-photos/image-20230212234601021.png)
