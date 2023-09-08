@@ -186,14 +186,11 @@ beanFactory的排序：
 - tips
 
   - ==@Autowired结合方法进行注入，可以打印信息查看是否注入成功；== 
-
-    - ![image-20230907190211419](spring原理-photos/image-20230907190211419.png)
-
   - Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定；
 
-    //将后处理器加入到容器中
-
-    ![image-20230213230017296](spring原理-photos/image-20230213230017296.png)
+  - ![image-20230907190211419](spring原理-photos/image-20230907190211419.png)
+  - //将后处理器加入到容器中
+  - ![image-20230213230017296](spring原理-photos/image-20230213230017296.png)
 
 - 示例代码
   - ![image-20230212234621913](spring原理-photos/image-20230212234621913.png)
@@ -225,17 +222,26 @@ beanFactory的排序：
 
 ### 第五讲 BeanFactory后处理器
 
-**后处理器功能简介：ConfigurationClassPostProcessor.class； MapperScannerConfigurer；** 
+**BeanFactory后处理器**
 
-作用//refresh回创建单例bean；  MapperScannerConfigurer.class 扫描mybatis的mapper接口，要指定扫描到的包，bd为beanDefinition；一般spring boot自动配置间接用到，@MapperScanner则是SSM架构用到的技术；
-
-![image-20230219153011136](spring原理-photos/image-20230219153011136.png)
+- ConfigurationClassPostProcessor.class: 解析@Bean、@Component 、@Import 、@ImportResource
+-  MapperScannerConfigurer[springboot自动配置]：扫描mybatis的mapper接口；
+  - 一般spring boot自动配置，SSM架构用的@MapperScanner底层也是MapperScannerConfigurer.class ；
+  - 入参：要指定扫描的包  //bd为beanDefinition；
+- 代码示例：
+  - ![image-20230219153011136](spring原理-photos/image-20230219153011136.png)
 
 **模拟@ComponentScan注解的解析：** //==getResources是要获取二进制文件，难怪spring bean对象得是动态代理？？==；   ==需要的配置类信息，每个配置类有哪些方法和功能，得好好总结下；==
 
-- AnnotationUtils.findAnnotation用于判断某个类上是不是有加注解并获取注解对象  参数----Config.class, 注解对象类型；  //如何做到判断类上是否有注解？如何
-- 获取basePackages 包名，报名格式转换，   getResources获取所有类资源 ；
-- factory.getMetadata判断类是否加了@Component注解 ;  如果加了则生成对应的BeanDefinition，生成bean工厂并注册
+- 获取ComponentScan注解中声明的包名，获取包下所有的类；
+  - AnnotationUtils.findAnnotation用于判断某个类上是不是有加注解并获取注解对象  参数----Config.class, 注解对象类型；  //如何做到判断类上是否有注解？
+  - 获取basePackages 包名，报名格式转换，   getResources获取所有类资源 ；
+
+- 判断每一个类是否加了@Component注解 ;  如果加了则生成对应的BeanDefinition，生成bean工厂并注册
+
+  - CachingMetadataReaderFactory：获取类的元数据信息、注解信息等；用到的方法：getMeradataReader  getAnnotationMetadata().hasAnnotation()  getAnnotationMetadata().hasMetaAnnotation 
+
+    
 
 //getResources是在class目录下扫描到的，扫的是字节码？
 
