@@ -173,7 +173,7 @@ beanFactory的排序：
 
 ![image-20230212232156415](spring原理-photos/image-20230212232156415.png)
 
-### 第四章
+### 第四讲 Bean后处理器
 
 #### 常见的Bean后处理器
 
@@ -231,140 +231,128 @@ beanFactory的排序：
 - 代码示例：
   - ![image-20230219153011136](spring原理-photos/image-20230219153011136.png)
 
-**模拟@ComponentScan注解的解析：** //==getResources是要获取二进制文件，难怪spring bean对象得是动态代理？？==；   ==需要的配置类信息，每个配置类有哪些方法和功能，得好好总结下；==
+**模拟@ComponentScan注解的解析：** //==getResources是要获取二进制文件，难怪spring bean对象得是动态代理？？==；
 
 - 获取ComponentScan注解中声明的包名，获取包下所有的类；
-  - AnnotationUtils.findAnnotation用于判断某个类上是不是有加注解并获取注解对象  参数----Config.class, 注解对象类型；  //如何做到判断类上是否有注解？
+  - AnnotationUtils.findAnnotation用于判断某个类上是不是有加注解并获取注解对象  参数----Config.class, 注解对象类型；  //==如何做到判断类上是否有注解底层原理？==
   - 获取basePackages 包名，报名格式转换，   getResources获取所有类资源 ；
-
-- 判断每一个类是否加了@Component注解 ;  如果加了则生成对应的BeanDefinition，生成bean工厂并注册
+- 判断每一个类是否加了@Component注解 ;  如果加了则生成对应的BeanDefinition，并注册到bean工厂
 
   - CachingMetadataReaderFactory：获取类的元数据信息、注解信息等；用到的方法：getMeradataReader  getAnnotationMetadata().hasAnnotation()  getAnnotationMetadata().hasMetaAnnotation 
-
-    
-
-//getResources是在class目录下扫描到的，扫的是字节码？
-
-![image-20230219155926088](spring原理-photos/image-20230219155926088.png)
-
-CachingMetadataReaderFactory+Resources获取类的元数据信息；
-
-![image-20230219160528207](spring原理-photos/image-20230219160528207.png)
-
-
-
-//BeanNameGenerator接口可以依据注解获取bean的名字； registerBeanDefinition将bean注册到工厂中；
-
-![image-20230226133516051](spring原理-photos/image-20230226133516051.png)
-
-//完整代码略； PathMatchingResourcePatternResolver() 这里和applicationContext类似 ， instanceOf用法？？？
-
-![image-20230226143006514](spring原理-photos/image-20230226143006514.png)
-
-![image-20230226143107701](spring原理-photos/image-20230226143107701.png)
-
-![image-20230226143033100](spring原理-photos/image-20230226143033100.png)
-
-![image-20230226143213740](spring原理-photos/image-20230226143213740.png)
+- AnnotationBeanNameGenerator解析@Component获取bean的名字；
+  -  registerBeanDefinition将bean注册到工厂中；
+  - getResources是在class目录下扫描到的，扫的是字节码？
+- 将自定义的类抽取成独立的beanFactory后处理器，ComponentScanPostPostProcessor实现的BeanFactoryPostProcessor的postProcessBeanFactory方法会在refresh的时候回调 //可能要吧ConfigurableListableBeanFactory类型需要转换一下；getResource换一个类去调用；
+- 示例代码：
+  - ![image-20230219155926088](spring原理-photos/image-20230219155926088.png)
+  - ![image-20230219160528207](spring原理-photos/image-20230219160528207.png)
+  - ![image-20230226133516051](spring原理-photos/image-20230226133516051.png)
+  - ![image-20230226143006514](spring原理-photos/image-20230226143006514.png)
+  - ![image-20230226143107701](spring原理-photos/image-20230226143107701.png)
+  - ![image-20230226143033100](spring原理-photos/image-20230226143033100.png)
+  - ![image-20230226143213740](spring原理-photos/image-20230226143213740.png)
 
 **模拟@Bean注解的解析**
 
-- CacheingMeradataReaderFactory.getMetadataReader 加载类信息； 
-- 获取注解相关的元素，进一步获取被@Bean注解标注的方法
-- 遍历  方法： BeanDefinitionBuilder 生成 对应BeanDefiniton 入参----方法名、类名[用到反射 调用工厂方法]
-- 将BeanDefiniton加入到Bean工厂 入参----bean的名字、beanDefiniton对象（一般就用方法名作为bean的名字）；
+- CacheingMeradataReaderFactory.getMetadataReader 加载Config类信息，进一步获取类中被@Bean注解标注的方法；
+- 遍历  方法： BeanDefinitionBuilder.genericBeanDefiniton().setFactoryMethodOnBean 生成 对应BeanDefiniton 入参----方法名、工厂类名
+  - 注意区别，这里生成BeanDefinition的不是config类[是个工厂类]，而是config类中@Bean注解标注的方法；
+- 将BeanDefiniton注册到Bean工厂 入参----bean的名字、beanDefiniton对象（一般就用工厂方法名作为bean的名字）；
 - 补充
-  - //Bean定义方法有入参的话，需要指定自动装配模式 builder.setAutowiredMode
-  - Bean中有属性的话， getAnnotationAttributes获取注解的属性；如果属性有值，则进行对应的操作(如有initMehtod则调用setInitMethodName)
+  - //Bean定义方法有入参的话，需要指定自动装配模式 builder.setAutowiredMode  
+  - Bean中有属性的话， getAnnotationAttributes().get获取@Bean中的属性；如果属性有值，则进行对应的操作(如有initMehtod属性则调用setInitMethodName)
 
-配置类充当工厂的角色，@Bean标注的方法充当工厂方法；后面创建beanDefiniton用工厂的方式  CacheingMeradataReaderFactory.getMetadataReader；
-
-
-
-![image-20230226170127667](spring原理-photos/image-20230226170127667.png)
-
-![image-20230226170218062](spring原理-photos/image-20230226170218062.png)
+- ==tips: 捕捉异常，ctrl+alt+T==
+- 示例代码：目前配置类路径和类名还是写死，其实要找@Configuration标注的所有类；
+  - ![image-20230226170127667](spring原理-photos/image-20230226170127667.png)
+  - ![image-20230226170218062](spring原理-photos/image-20230226170218062.png)
 
 **模拟@MapperScanner注解的解析**
 
 - 前置说明：
-  - 接口转换为对象：用Mapper对象工厂类--接口  创建Mappe对象，并指定sqlSessionFactory即可；
+  - beanFactory只能管理对象，要添加接口则需要接口转对象； 用MapperFactoryBean<T>封装，并指定sqlSessionFactory即可；
+    - 
+- @MapperScanner实现    实现接口BeanDefinitionRegistry(也是DefaultListableBeanFactory的父接口，直接就有registerBeanDefiniton方法)
   - 之前的后处理器实现的接口不好，用了一个强转，建议使用：BeanDefinitionRegistryPostProcessor，直接有registBeanDefiniton方法；
-  - ![image-20230226172036075](spring原理-photos/image-20230226172036075.png)
+  - 
 
 - 实现流程：
-  - 加载class文件
-  - for  resource : 获取元数据信息reader，获取类的元数据信息，判断是否为接口， BeanDefinitionBuilder.genericBeanDefinition()获取BeanDefinition，并设置构造方法参数值[addConstructorArgValue]，设置装配模式，注册对应的bean；//为了自动生成名字（接口名而不是MapperFactoryBean），多定义了一个接口的beanDefinition
-  - ![image-20230226204740122](spring原理-photos/image-20230226204740122.png)
-  - ![image-20230226205207986](spring原理-photos/image-20230226205207986.png)
+  - getResources加载class路径下所有文件，
+  - for  resource :getMetadataReader 获取文件元数据信息，getClassMetadata进一步获取类信息
+    - if 为接口， 
+      - BeanDefinitionBuilder.genericBeanDefinition()获取BeanDefinition，并设置构造方法参数值[addConstructorArgValue]，设置装配模式，注册对应的bean；
+        - setAutowiredMode 设置了自动装配模式后，factory会自动去工厂中找sqlSessionFactory并装配；这里的生成bean名字时generateBeanName的入参不再是类而是金额口，因为所有接口的封装类都是MapperFactoryBean；
+  - 代码示例：
+    - ![image-20230909141720183](spring原理-photos/image-20230909141720183.png)
+    - ![image-20230226172036075](spring原理-photos/image-20230226172036075.png)
+    - ![image-20230226204740122](spring原理-photos/image-20230226204740122.png)
+    - ![image-20230226205207986](spring原理-photos/image-20230226205207986.png)
 
 ### 第六讲
 
-#### Aware接口、InitializingBean接口//注入时会回调，可以获取自己需要的信息
+#### Aware接口、InitializingBean接口简介
 
-![image-20230226205819279](spring原理-photos/image-20230226205819279.png)
+- 功能
 
-![image-20230226211611809](spring原理-photos/image-20230226211611809.png)
+  - aware接口：bean名字注入、BeanFactory容器注入、ApplicationContext容器注入、解析${}等
+  - InitializingBean接口：为bean添加初始化方法
+  - ![image-20230226205819279](spring原理-photos/image-20230226205819279.png)
 
-![image-20230226212034237](spring原理-photos/image-20230226212034237.png)
+- 核心亮点：在配置类中存在BeanFactoryPostProcessor的情况，@Aturowired @PostConstuct等扩展功能会失效，此时可以使用Aware接口、InitializingBean接口替代实现bean名字注入、bean初始化方法设置等操作；
 
-![image-20230226212055849](spring原理-photos/image-20230226212055849.png)
+- 用法
 
-**失效的情形**
+  - /注入时会回调，可以获取自己需要的信息，先回调Aware，再回调InitializingBean；两个接口内置功能[不加后处理器也能生效，且不会失效]不同于@Aturowired @PostConstuct扩展功能；
+  - ![image-20230226211611809](spring原理-photos/image-20230226211611809.png)
+  - ![image-20230226212034237](spring原理-photos/image-20230226212034237.png)
 
-![image-20230226213130208](spring原理-photos/image-20230226213130208.png)
+- **加了后处理器@Autowired等注解依然失效的情形**：配置类内部添加了BeanFactoryPostProcessor的Bean，使得@Atrowired @PostConstruct失效 
 
-![image-20230226214748640](spring原理-photos/image-20230226214748640.png)
+  - context.refresh()执行顺序：1.beanFactory后初期，2.添加bean后处理器，3.初始化单例
 
-//相当于3.1  3.2这些扩展功能是注册在BeanPostProcessor；
-
-![image-20230226214249847](spring原理-photos/image-20230226214249847.png)
-
-![image-20230226214225873](spring原理-photos/image-20230226214225873.png)
-
-
-
-![image-20230226215033026](spring原理-photos/image-20230226215033026.png)
+  - 失效原因分析：Java配置类包含BeanFactoryPostProcessor，故提前创建并初始化[为了执行BeanFactoryPostProcessor]，而此时BeanFactoryPostProcessor  BeanPostProcessor都没准备好，故配置类中的@Autowired等注解都无法解析
+  - 解决方法1：
+    - 使用IntializingBean、Aware接口替代@Autowired   @PostConstruct；
+    - ![image-20230226213130208](spring原理-photos/image-20230226213130208.png)
+    - ![image-20230226214249847](spring原理-photos/image-20230226214249847.png)
+    - ![image-20230226214225873](spring原理-photos/image-20230226214225873.png)
 
 ### 第七讲  初始化和销毁
 
-#### 初始化的三种方法
+- 初始化的三种方法
+  - @PostConstruct     后处理器，扩展功能，第一位执行；//aware在1 2之间执行；
+  - 实现initializingBean接口     第二位执行；//上一讲提到的aware接口则是1.5位执行
+  - @Bean(initMethod = "init3")    第三位执行
 
-- @PostConstruct     后处理器，扩展功能，第一位执行；//aware在1 2之间执行；
-- 实现initializingBean接口     第二位执行；
-- @Bean(initMethod = "init3")    第三位执行
+- 销毁的三种方法，优先级也是按顺序
+  - @PreDestroy
+  - 实现disposableBean接口
+  - @Bean(destroyMethod = "destroy3")
+- 代码示例：
+  - ![image-20230910225408139](spring原理-photos/image-20230910225408139.png)
+  - ![image-20230910225417959](spring原理-photos/image-20230910225417959.png)
+  - ![image-20230910230041801](spring原理-photos/image-20230910230041801.png)
 
-#### 销毁的三种方法
+### 第八讲  Scope
 
-- @PreDestroy
-- DisposableBean
--  @Bean(destroyMethod = "destroy3")
+- spring中scope的种类//spring5
+  - singleton(容器关闭时销毁),  prototype（自行调用销毁）,  request（存在web的request域中，生命周期同request，重发请求会销毁）,  session(会话域，长时间不发/重新打开浏览器/调用session的invalid方法 请求会销毁),  application（应用程序域  启动时入servlet context，似乎spring不会自动销毁 即使你关闭应用）
 
-### 第八讲  Scope  
-
-singleton(容器关闭时销毁),  prototype（自行调用销毁）,  request（存在request域中，生命周期同request，重发请求会销毁）,  session(会话域，长时间不发请求会销毁),  application（应用程序域  入servlet context，似乎spring不会自动销毁 即使你关闭应用）
-
- 单例使用其它域，必须用@Lazy [本质上是创建代理对象，最后反射调用Object的toString] ，jdk9以后可能出现：
+- 单例的bean使用其它域的类，必须用@Lazy [否则会有问题，本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛下面的异常；
 
 ![image-20230304155219903](spring原理-photos/image-20230304155219903.png)
 
 ![image-20230304155137529](spring原理-photos/image-20230304155137529.png)
 
-解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置；
+- 解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置  --add-opens；
 
 ![image-20230304155559884](spring原理-photos/image-20230304155559884.png)
 
-测试案例参考配制：
+- 测试案例参考配制 session超时时间10s：但是实际的超时时间是max(超时时间配置，检测session超时的频率)
 
 ![image-20230304160017798](spring原理-photos/image-20230304160017798.png)
 
-
-
-
-
-
-
-一个单例的bean注入其他scope的bean会有问题，需要加一个Lazy注解。
+P29
 
 #### 单例注入多例，scope会失效（解决方案本质上都是获取多例的时候多一层） E（单例）有属性发（多例）；
 
