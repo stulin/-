@@ -335,44 +335,40 @@ beanFactory的排序：
 
 ### 第八讲  Scope
 
-- spring中scope的种类//spring5
+- spring中scope的种类//spring5  默认single
   - singleton(容器关闭时销毁),  prototype（自行调用销毁）,  request（存在web的request域中，生命周期同request，重发请求会销毁）,  session(会话域，长时间不发/重新打开浏览器/调用session的invalid方法 请求会销毁),  application（应用程序域  启动时入servlet context，似乎spring不会自动销毁 即使你关闭应用）
 
-- 单例的bean使用其它域的类，必须用@Lazy [否则会有问题，本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛下面的异常；
-
-![image-20230304155219903](spring原理-photos/image-20230304155219903.png)
-
-![image-20230304155137529](spring原理-photos/image-20230304155137529.png)
+- 单例的bean使用其它域的类，必须用@Lazy [否则 注入的类scope会失效，见下文，本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛IllegalAccessException异常；
 
 - 解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置  --add-opens；
 
-![image-20230304155559884](spring原理-photos/image-20230304155559884.png)
-
 - 测试案例参考配制 session超时时间10s：但是实际的超时时间是max(超时时间配置，检测session超时的频率)
+- 示例代码
+  - ![image-20230304155219903](spring原理-photos/image-20230304155219903.png)
+  - ![image-20230304155137529](spring原理-photos/image-20230304155137529.png)
+  - ![image-20230304155559884](spring原理-photos/image-20230304155559884.png)
+  - ![image-20230304160017798](spring原理-photos/image-20230304160017798.png)
 
-![image-20230304160017798](spring原理-photos/image-20230304160017798.png)
 
-P29
 
-#### 单例注入多例，scope会失效（解决方案本质上都是获取多例的时候多一层） E（单例）有属性发（多例）；
+- 单例注入多例，scope会失效（解决方案本质上都是获取多例的时候多一层） E（单例）有属性发（多例）；
+  - 原因：对于单例对象只执行了一次初始化，所以内部属性的注入也只发生了一次
+    - 
+  - 解决方法
+    - 四种解决方法思想上都是一样的：推迟其它scope bean的获取，代理  工厂  applicatioinContext
+    - 1.添加@Lazy解决  
+      - 加了@Lazy之后注入的是代理对象，代理类虽然不变，但是使用代理对象的方法时会创建新的多例代理对象；
+    - 2.使用@Scope中的属性proxyMode解决 ，底层原理也是生成代理
+    - 3.(推荐)使用工厂类解决，由工厂创建多例对象
+    - 4.(推荐)注入一个ApplicationContext，调用getBean方法解决；
 
-![image-20230305135529245](spring原理-photos/image-20230305135529245.png)
-
-- 添加@Lazy解决  
-
-  - 代理类是原F1的子类，代理对象使用f的方法时 可以控制注入新的f对象；
-
-![image-20230305135609810](spring原理-photos/image-20230305135609810.png)
-
-- 要注入的多例对象上添加配置，也是生成代理
-
-![image-20230305140022017](spring原理-photos/image-20230305140022017.png)
-
-- 多一层对象工厂
-
-![image-20230305140156490](spring原理-photos/image-20230305140156490.png)
-
-- 注入一个ApplicationContext，调用getBean方法；
+- 示例代码
+  - ![image-20230305135529245](spring原理-photos/image-20230305135529245.png)
+  - ![image-20230305135609810](spring原理-photos/image-20230305135609810.png)
+  - ![image-20230911122859580](spring原理-photos/image-20230911122859580.png)
+  - ![image-20230305140022017](spring原理-photos/image-20230305140022017.png)
+  - ![image-20230305140156490](spring原理-photos/image-20230305140156490.png)
+  - ![image-20230911124100586](spring原理-photos/image-20230911124100586.png)
 
 #### aop之ajc增强
 
