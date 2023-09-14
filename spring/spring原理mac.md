@@ -431,51 +431,55 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 ##### cglib实现代理
 
 - 参数一：被代理类
-- 参数二：Callback的子接口，MethodInterceptor
-- MethodInterceptor的四个参数：代理对象，当前代理对象中执行的方法，方法的参数，MethodProxy
+- 参数二：Callback的子接口，MethodInterceptor //内部定义具体的行为
+- MethodInterceptor的四个参数：代理对象，当前代理对象中执行的方法，方法的参数，MethodProxy【？？？】
+- 使用methodProxy可以避免反射调用，methodProxy的invoke传被代理对象+参数[spring使用这种]，或者用invokeSuper只传  代理对象本身+参数
+- 特点：被代理类和代理类是父子关系，可以相互强转，且被代理类不能是final；父类方法加了final也不能被增强，代理类需要重写被代理方法；
 - 示例
   - ![image-20230305153521286](spring原理mac.assets/image-20230305153521286.png)
-  - 使用methodProxy可以避免反射调用，invoke传被代理对象[spring使用这种]，厚着invokeSuper传代理对象
   - ![image-20230305153957518](spring原理mac.assets/image-20230305153957518.png)
 
-- 特点：被代理类和代理类是父子关系，可以相互强转，且被代理类不能是final；父类方法加了final也不能被增强，代理类会重写被代理方法；
+#### jdk代理模拟实现
 
-#### jdk代理原理
+- asm运行时动态生成代理类的字节码；//spring框架 jdk
 
-//代理的场景：日志；权限；事务的增强？
+- //代理的场景：日志；权限；事务的增强？
+- 模拟代理实现1：
+  - ![image-20230914191247050](spring原理mac-photos/image-20230914191247050.png)
+- 模拟代理实现2：具体的代理方法在定义代理对象的时候指定，代理类只做代理方法的调用； //对象有多个方法时,不把代理的内容固定死
+  - ![image-20230914191521059](spring原理mac-photos/image-20230914191521059.png)
+- 模拟代理实现3：反射调用的方法入参增加  mthod对象、方法参数   //确定代理是调目标的哪个方法
+  - ![image-20230914192053586](spring原理mac-photos/image-20230914192053586.png)
+- tips：ctrl + shift +enter，查看完整的提示并选择；
 
-- 模拟实现代理，代理对象 增加一个私有成员Invocationhandler，代理方法的具体执行逻辑，放在Invocationhandler的invoke方法中； 在声明代理对象的时候再指定具体的invoke方法的执行内容；
+- 其它：还需要增加返回值处理（invoke是Object），增加代理对象参数，异常处理（检查异常、throwable异常不能直接抛，需要转换下再抛）；方法名声明为静态变量；
+  - ![image-20230914193923708](spring原理mac-photos/image-20230914193923708.png)
+- jdk的代理会继承Proxy类，内含一个InvocationHandler属性，还有构造方法，所以可以直接用
+  - ![image-20230914194258624](spring原理mac-photos/image-20230914194258624.png)
+- arthas工具查看反编译代理类源码：[powershell]需要知道类名才能反编译；程序要保持运行状态，可以System.in.read()；//直接看jdk代理源码基本看不懂，因为用的asm动态生成代理类的字节码；
 
-- ![image-20230305155311339](spring原理mac.assets/image-20230305155311339.png)
-- 对象有多个方法时，上述代码的invoke方法都调用的是被代理的foo方法，需要改进 所有的方法都调invoke， invoke具体反射调用哪个被代理方法 参数化；
-- ![image-20230305155917375](spring原理mac.assets/image-20230305155917375.png)
-- 还需要增加返回值处理（invoke是Object），增加代理对象参数，异常处理（检查异常、throwable异常不能直接抛，需要转换下再抛）；
-- ![image-20230305161229366](spring原理mac.assets/image-20230305161229366.png)
-- 方法对象的获取不需要每次调用都获取一次
-- ![image-20230305161510415](spring原理mac.assets/image-20230305161510415.png)
--  jdk的代理会继承Proxy类，内含一个InvocationHandler接口，所以可以直接用
-- ![image-20230305163339477](spring原理mac.assets/image-20230305163339477.png)
-- arthas工具[powershell]需要知道类名才能反编译；程序要保持运行状态，可以System.in.read()；//直接看jdk代理源码基本看不懂，因为用的asm动态生成代理类的字节码；
-
-- ![image-20230305164327370](spring原理mac.assets/image-20230305164327370.png)
-- ![image-20230305164452865](spring原理mac.assets/image-20230305164452865.png)
-- ![image-20230305164535950](spring原理mac.assets/image-20230305164535950.png)
-- ![image-20230305164609432](spring原理mac.assets/image-20230305164609432.png)
+  - ![image-20230305164327370](spring原理mac.assets/image-20230305164327370.png)
+  - ![image-20230305164452865](spring原理mac.assets/image-20230305164452865.png)
+  - ![image-20230305164535950](spring原理mac.assets/image-20230305164535950.png)
+  - ![image-20230305164609432](spring原理mac.assets/image-20230305164609432.png)
 
 #### jdk代理字节码生成
 
 - jdk代理没有源码，运行期间动态生成字节码，用的asm[spring jdk使用很多]
-- 安装idea插件 java源码转换为asm代码，然后可以转换为字节码；但不能很好地在高版本的jdk里面工作；
+- 安装idea插件 java源码转换为asm代码，然后可以转换为字节码；但不能很好地在高版本的jdk里面工作[java8可以]；
   - ![image-20230305165206211](spring原理mac.assets/image-20230305165206211.png)
 - 编写一个代理类的代码
   - ![image-20230305165934972](spring原理mac.assets/image-20230305165934972.png)
   - 编译， 右键-- show Bytecode outline，会转换为ASMified  即asm代码；拷贝代码、粘贴；需要导下包，导入spring的包即可；
-  - ClassWriter类调用生成字节码；cw.visit 就是生成一个代理对象（@Lazy就是做这个事情）；定义类的成员变量、方法;  cw.toByteArray（）得到的数组就是Class字节码； 例如：把byte数组写进ckass文件；
+  - ClassWriter类调用生成字节码；cw.visit 就是生成一个代理对象（@Lazy就是做这个事情）；定义类的成员变量、方法[字节码级别];  cw.toByteArray（）得到的数组就是Class字节码； 把byte数组写进ckass文件；
+  - 例如 代理类转asm-->生成字节码-->反编译   代码和原来的java代码一致：
   - ![image-20230308223140701](spring原理mac-photos/image-20230308223140701.png)
-  - 直接在内存中使用字节码，defineClass依据字节数组生成类对象；  入参：类名、字节数组、字节数组起始为位置、长度；依据类对象可以创建对象；   
+  - 直接在内存中使用字节码，defineClass依据字节数组生成类对象；  入参：类名、字节数组、字节数组起始为位置、长度；最后创建实例；   
   - ![image-20230308223951386](spring原理mac-photos/image-20230308223951386.png)
   - ![image-20230308224058618](spring原理mac-photos/image-20230308224058618.png)
   - 具体字节码的生成要看asm的api，还要熟悉jvm的指令，成本有点高；
+
+P40
 
 #### jdk反射优化//反射调用一般效率较低
 
