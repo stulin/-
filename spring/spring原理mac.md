@@ -376,10 +376,10 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 
 
-### 第九讲  AOP
+### 第九至十一讲  AOP的四种实现方式
 
 - AOP的实现方式：
-  - 代理，
+  - 代理，jdk+cglib
   - aspectj[编译时改写class实现增强]，可以增强静态方法[代理不能增强静态方法]
   - agent[类加载阶段修改class实现增强]，可以突破代理实现aop的限制：一个方法调用另一个方法，被调用的方法无法增强(因为另一个方法会通过this调用，不走代理)；
 
@@ -439,7 +439,7 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
   - ![image-20230305153521286](spring原理mac.assets/image-20230305153521286.png)
   - ![image-20230305153957518](spring原理mac.assets/image-20230305153957518.png)
 
-#### jdk代理模拟实现
+### 第十二讲 jdk代理原理
 
 - asm运行时动态生成代理类的字节码；//spring框架 jdk
 
@@ -479,97 +479,101 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
   - ![image-20230308224058618](spring原理mac-photos/image-20230308224058618.png)
   - 具体字节码的生成要看asm的api，还要熟悉jvm的指令，成本有点高；
 
-P40
-
 #### jdk反射优化//反射调用一般效率较低
 
 - method.invoke本质上是通过methodAccessor实现类实现；
-- 前16次用本地的java native api MethodAccessor，性能低；第17次  换了实现类反射，提高了性能；
+- 前16次用本地的java native api， MethodAccessor，性能低；第17次  换了实现类 [生成了一个代理类，Arthas查看得知，第17次直接直接正常调用，为了优化一个方法的反射调用  直接生成了 代理类，就可以直接调用]，提高了性能； 
 - ![image-20230308225422323](spring原理mac-photos/image-20230308225422323.png)
 - ![image-20230308225547930](spring原理mac-photos/image-20230308225547930.png)
 
-- Arthas查看得知，第17次直接直接正常调用，为了优化反射调用  直接生成了 代理类，就可以直接调用
-  - ![image-20230308225402202](spring原理mac-photos/image-20230308225402202.png)
+- ![image-20230308225402202](spring原理mac-photos/image-20230308225402202.png)
 
-​			
+### 第十三讲至十四讲  cglib代理原理及MethodPorxy原理
 
-#### cglib代理
+- 使用示例继承父类
+  - ==MehodInterceptor.intercept 入参: 代理类对象   当前正在执行的方法   方法实参数组 **mehtodProxy[后面有说明]**==
+- MthodProxy原理
+  - ==MehtodProxy.create的五个参数：目标类型  代理类型 “参数、返回类型”  带增强功能的方法名 带原始功能的方法名;==//()V表示入参为空，返回值为void; ()表示入参为int 返回值 void
+    - 方法代理实现每次都直接调用；
+    - methodProxy.invoke()内部无反射，结合目标用；methodProxy.invoke()内部无反射，结合代理用；
+  - methdoProxy避免反射调用的原理，生产的代理类继承了抽象类FastClass;也是直接生成字节码，没有Java的源码；==核心的两个方法 getIndex[获取目标方法的编号，方法签名转换为整数编号] invoke[依据整数编号正常调用目标对象的方法]==； Proxy方法中初始化代码，调用create方法的时候会生成targetClass代理对象；
+    - 会生成两个了分别配合 目标类使用和代理类使用
+- jdk和cglib的区别：
+  - jdk第17次有优化，针对一个方法产生一个代理类， 反射调用-->直接调用；==cglib第一次调用就会产生代理并直接调用，无需反射调用==，
+  - jdk一个方法产生一个代理对象；cglib优点：代理会生成两个FastClass[一个配合目标对象调用，一个配合代理对象调用]，每个FastClass类里面可以匹配多个方法，相比jdk代理生成的代理类数量少一些； //再汇总下其它区别： 如jdk代理需要实现接口；cglib生成子类等？
+- 示例代码：cglib代理使用
+  - ![image-20230319142730188](spring原理mac.assets/image-20230319142730188.png)
+  - ![image-20230319143141053](spring原理mac.assets/image-20230319143141053.png)
+  - ![image-20230319143558529](spring原理mac.assets/image-20230319143558529.png)
+  - ![image-20230319143626105](spring原理mac.assets/image-20230319143626105.png)
+  - ![image-20230319143813939](spring原理mac.assets/image-20230319143813939.png)
 
-![image-20230319142730188](spring原理mac.assets/image-20230319142730188.png)
+- 代码示例：MehtodProxy使用
+  - ![image-20230319150416493](spring原理mac.assets/image-20230319150416493.png)
+  - ![image-20230917160944782](spring原理mac-photos/image-20230917160944782.png)
+  - ![image-20230319150845297](spring原理mac.assets/image-20230319150845297.png)
 
-- 继承父类
-
-- ==MehodInterceptor.intercept 入参: 代理类对象   当前正在执行的方法   方法实参数组 **mehtodProxy[后面有说明]**==
-- jdk和cglib的区别：jdk第17次有优化，针对一个方法产生一个代理类， 反射调用-->直接调用；cglib第一次调用就会产生代理，无需反射调用，一个代理类对应两个FastClass[对应代理对象 和目标对象 ，可能有些场景目标对象比代理对象多了一些功能吧，所以有两种用法？]，每个FastClass类里面可以匹配多个方法，相比jdk生成代理类数量少一些；
-
-![image-20230319143141053](spring原理mac.assets/image-20230319143141053.png)
-
-![image-20230319143558529](spring原理mac.assets/image-20230319143558529.png)
-
-![image-20230319143626105](spring原理mac.assets/image-20230319143626105.png)
-
-![image-20230319143813939](spring原理mac.assets/image-20230319143813939.png)
-
-- ==MehtodProxy.create的五个参数：目标类型  代理类型 “参数、返回类型”  带增强功能的方法名 带原始功能的方法名;==//()V表示入参为空，返回值为void; ()表示入参为int 返回值 void
-- ![image-20230319150416493](spring原理mac.assets/image-20230319150416493.png)
-
-![image-20230319145038369](spring原理mac.assets/image-20230319145038369.png)
-
-![image-20230319150845297](spring原理mac.assets/image-20230319150845297.png)
-
-- methdoProxy避免反射调用的原理，使用了FastClass; FastClass也是直接生成字节码，没有Java的源码；==核心的两个方法 getIndex[方法签名转换为整数编号] invoke[依据整数编号调用对用的方法]==； Proxy方法中初始化代码，调用create方法的时候会生成targetClass代理对象；
-- methodProxy.invoke(target, args)模拟实现；结合目标对象使用的class
+- tips:IDEA上下分屏展示，直接拖文件名框到  编辑页面下方即可；
+- methodProxy.invoke(target, args)模拟实现；结合目标对象使用的class;   TargetFastClass
   - ![image-20230319151421709](spring原理mac.assets/image-20230319151421709.png)
   - ![image-20230319155548583](spring原理mac.assets/image-20230319155548583.png)
   - ![image-20230319155732395](spring原理mac.assets/image-20230319155732395.png)
   - ![image-20230319160219530](spring原理mac.assets/image-20230319160219530.png)
   - ![image-20230319161820487](spring原理mac.assets/image-20230319161820487.png)
-- methodProxy.invoke()    结合代理对象使用
-  - 注意：调的是代理类的原始功能方法  因为使用methodProxy代理之前已经进行过增强了；
+- methodProxy.invoke()模拟实现    结合代理对象使用， 
+  - 和TargetFastClass类似，不同的是方法编号获取代理类的方法编号；
+  - 注意：invoke调的是代理类的原始功能方法  因为自定义的intecept方法使用methodProxy代理之前已经进行过增强了；
   - ![image-20230319162337876](spring原理mac.assets/image-20230319162337876.png)
   - ![image-20230319162908632](spring原理mac.assets/image-20230319162908632.png)
   - ![image-20230319162954823](spring原理mac.assets/image-20230319162954823.png)
 
-#### spring选择代理
+### 第十五讲spring选择代理
 
-**切面：通知+切点**； advisor包含一个通知和切点；
+- 基础概念
 
-- ![image-20230319164309395](spring原理mac.assets/image-20230319164309395.png)
+  - **切面Aspect：通知+切点**； //可以有多组 通知+切点；
+  - advisor是细粒度的的切面：包含一个通知和切点；
 
-模拟实现切面
+- ProxyFactory会依据具体情况选择 cglib或者jdk增强，
 
-- org.springframework.aop.Pointcut
+  - proxyFactory的父类ProxyConfig有一个 proxyTargetClass属性
+  - proxyTargetClass为false且目标 实现  接口，用jdk实现
+  - proxyTargetClass为false且目标 没有实现 接口，用cglib实现
+  - proxyTargetClass为true，用cglib实现
 
-- ![image-20230319164910490](spring原理mac.assets/image-20230319164910490.png)
+- 代码示例： 
 
-- org.aopalliance.intercept.MethodInterceptor
+  - ![image-20230319164309395](spring原理mac.assets/image-20230319164309395.png)
+  - AOP使用示例
+    - org.springframework.aop.Pointcut
 
-- ![image-20230319165552181](spring原理mac.assets/image-20230319165552181.png)
+    - ![image-20230319164910490](spring原理mac.assets/image-20230319164910490.png)
 
-- ![image-20230319165937659](spring原理mac.assets/image-20230319165937659.png)
+    - org.aopalliance.intercept.MethodInterceptor //本质上是一个环绕通知
+    - ![	](spring原理mac.assets/image-20230319165552181.png)
 
-- ProxyFactory会依据具体情况选择 cglib或者jdk增强
+    - ![image-20230319165937659](spring原理mac.assets/image-20230319165937659.png)
+
+- ProxyFactory使用jdk： setInterfaces     setPrxyTargetClass
 
   - ![image-20230322220034855](spring原理mac-photos/image-20230322220034855.png)
   - ![image-20230322220228401](spring原理mac-photos/image-20230322220228401.png)
 
   
 
-#### 16讲 切点匹配
+### 第十六讲 切点匹配
 
-- execution(返回值  包名-类名-方法名 )
-
-- @annotation(注解的 包名-类名)
-
-- ![image-20230322221158226](spring原理mac-photos/image-20230322221158226.png)
-- @Transactional  可加方法、类[所有方法]、接口[实现该接口的类的所有的接口中的方法]；
-
-- MergeAnnotaions可以获取方法  类上的注解信息；默认只差一层，即仅本类，不会搜父类 接口，设置为SearchStrategy.TYPE_HIERARCHY
-  - ![image-20230322223204543](spring原理mac-photos/image-20230322223204543.png)
-
+- 切点 表达式匹配：execution(返回值  包名-类名-方法名 ) + [底层是调用]pointcut.matches方法；
+- 切点 注解匹配：@annotation(注解的 包名-类名)  + [底层是调用 MerthodMatcher接口]matches方法；
+- @Transactional  可加方法、类[所有方法]、接口[实现该接口的类的所有的接口中的方法]； //和前面两种情况不同
+  - 需要换一个pointcut，使用StaticMethodMatcherPointcut
+  - MergeAnnotaions可以获取方法  类上的注解信息；默认只差一层，即仅本类，不会搜父类 接口，设置为SearchStrategy.TYPE_HIERARCHY
+- 代码示例：模拟实现 切点表达式匹配，切点的注解匹配，@Transactional 如何解析方法 类上 接口上的注解
+  - ![image-20230322221158226](spring原理mac-photos/image-20230322221158226.png)
+- ![image-20230322223204543](spring原理mac-photos/image-20230322223204543.png)
 - ![image-20230322223228071](spring原理mac-photos/image-20230322223228071.png)
 
-#### 17讲 从@Apect到Advisor
+### 第十七讲 从@Apect到Advisor
 
 - 
 - ![image-20230322224530882](spring原理mac-photos/image-20230322224530882.png)
