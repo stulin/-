@@ -575,29 +575,31 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 
 ### 第十七讲 从@Apect到Advisor
 
-- 
-- ![image-20230322224530882](spring原理mac-photos/image-20230322224530882.png)
-- 转换为lamda快捷键？？？
-- ![image-20230322224829058](spring原理mac-photos/image-20230322224829058.png)
-- GenericApplicationContext是一个干净的容器；注册配置类  ConfigurationClassPostProcessor后处理器解析配置类内部的@Bean注解
+切面用法：高级切面+低级切面；
 
+- 高级切面用法：@Aspect + @Before/@After
+- @Advisor用法：自己定义Bean——Advisor[低级切面]  MethodInterceptor[通知的一种]
+  - GenericApplicationContext是一个干净的容器；注册配置类  ConfigurationClassPostProcessor后处理器解析配置类内部的@Bean注解
+- tips:转换为lamda快捷键？？？alt+enter看提示；
+- ![image-20230322224530882](spring原理mac-photos/image-20230322224530882.png)
+- ![image-20230322224829058](spring原理mac-photos/image-20230322224829058.png)
 - ![image-20230322225053015](spring原理mac-photos/image-20230322225053015.png)
 
 
 
-#### 第17讲 findEligibleAdvisors
+AnnotationAwareAspectJAutoProxyCreator.class介绍
 
-bean处理器，一  找到所有的切面，包括高级切面Aspect和低级切面Advisor；二  依据切面创建代理对象；
-
-AnnotationAwareAspectJAutoProxyCreator.class
-
-findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看切点是否和目标类匹配]，bean在容器的名字
-
-wrapIfNecessary:是否有必要创建代理
-
-- ![image-20230329214318042](spring原理mac-photos/image-20230329214318042.png)
-- ![image-20230329214751813](spring原理mac-photos/image-20230329214751813.png)
--   ![image-20230329215404758](spring原理mac-photos/image-20230329215404758.png)
+- 定义：bean后处理器，一  找到所有的切面，包括高级切面Aspect[会转换成低级切面]和低级切面Advisor；二  依据切面创建代理对象；
+- 通常生效时间：依赖注入之前   初始化之后
+- 核心方法介绍：
+  - findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看所有切面是否和目标类匹配]，bean在容器的名字[可以为空]
+  - wrapIfNecessary:是否有必要创建代理，目标有满足的切点才创建；
+    - 内部也是调用findEligibleAdvisors；返回值是代理/原始对象
+- tips:调用protected方法，反射，用子类调，在同一个包下；
+- 代码示例：模拟查找所有切面及是否需要创建代理
+  - ![image-20230329214318042](spring原理mac-photos/image-20230329214318042.png)
+  - ![image-20230329214751813](spring原理mac-photos/image-20230329214751813.png)
+  - ![image-20230329215404758](spring原理mac-photos/image-20230329215404758.png)
 
 #### 第17讲 代理创建时机
 
