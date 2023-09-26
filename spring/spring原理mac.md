@@ -590,7 +590,7 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 AnnotationAwareAspectJAutoProxyCreator.class介绍
 
 - 定义：bean后处理器，一  找到所有的切面，包括高级切面Aspect[会转换成低级切面]和低级切面Advisor；二  依据切面创建代理对象；
-- 通常生效时间：依赖注入之前   初始化之后
+- 通常生效时间：依赖注入之前   初始化之后 //创建-->  (* )依赖注入-->初始化(* )    ==注意和第六讲，注解失效结合学习下，对生命周期了解更深==
 - 核心方法介绍：
   - findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看所有切面是否和目标类匹配]，bean在容器的名字[可以为空]
   - wrapIfNecessary:是否有必要创建代理，目标有满足的切点才创建；
