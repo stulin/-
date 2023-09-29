@@ -590,16 +590,37 @@ BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean;
 AnnotationAwareAspectJAutoProxyCreator.class介绍
 
 - 定义：bean后处理器，一  找到所有的切面，包括高级切面Aspect[会转换成低级切面]和低级切面Advisor；二  依据切面创建代理对象；
-- 通常生效时间：依赖注入之前   初始化之后 //创建-->  (* )依赖注入-->初始化(* )    ==注意和第六讲，注解失效结合学习下，对生命周期了解更深==
+
+- ==通常生效时间：依赖注入之前   初始化之后 //创建-->  (* )依赖注入-->初始化(* )    注意和第六讲，注解失效结合学习下，对生命周期了解更深==
+
+  - springbean生命周期分四个阶段：构造，依赖注入，初始化，销毁[单例才调用]；
+
+  - bean后处理器生效的时间通常在：  实例化[或者说调用构造]前后   依赖注入   初始化前后  销毁时执行；
+
+  - 配置类内部添加了BeanFactoryPostProcessor的Bean，使得@Atrowired @PostConstruct失效 ； 
+
+    - 原因：\- context.refresh()执行顺序：1.beanFactory后处理器，2.添加bean后处理器，3.初始化单例
+
+      \- 失效原因分析：Java配置类包含BeanFactoryPostProcessor，故提前创建并初始化[为了执行BeanFactoryPostProcessor]，而此时BeanFactoryPostProcessor  BeanPostProcessor都没准备好，故配置类中的@Autowired[通过bean后处理器解析的]等注解都无法解析
+
+  - 这里的AnnotationAwareAspectJAutoProxyCreator只是一个普通的bean后处理器，生效时间为依赖注入和初始化之后；
+
 - 核心方法介绍：
-  - findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看所有切面是否和目标类匹配]，bean在容器的名字[可以为空]
-  - wrapIfNecessary:是否有必要创建代理，目标有满足的切点才创建；
-    - 内部也是调用findEligibleAdvisors；返回值是代理/原始对象
+  - findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看容器中所有切面是否和目标类匹配]，bean在容器的名字[可以为空]
+    - 返回值时List<Advisor>
+    - spring容自带一个切面你 ExposeInvocationInterceptor.ADVISOR
+  - wrapIfNecessary:是否有必要创建代理，目标有满足的切点则创建代理对象；
+    - 是否有必要创建代理：内部也是调用findEligibleAdvisors，返回值不为空说明有必要；
+    - 返回值是代理/原始对象
+    - 入参：目标对象、bean名字[测试可以随便给]、参数三 不重要；
+  
 - tips:调用protected方法，反射，用子类调，在同一个包下；
-- 代码示例：模拟查找所有切面及是否需要创建代理
+
+- 代码示例：==模拟spring框架==查找所有切面及是否需要创建代理
   - ![image-20230329214318042](spring原理mac-photos/image-20230329214318042.png)
   - ![image-20230329214751813](spring原理mac-photos/image-20230329214751813.png)
   - ![image-20230329215404758](spring原理mac-photos/image-20230329215404758.png)
+  - ![image-20230929161307111](spring原理mac-photos/image-20230929161307111.png)
 
 第17讲 代理创建时机
 
