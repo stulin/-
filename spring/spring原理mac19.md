@@ -1,722 +1,5 @@
 ==解锁了注解的新一种用法，使用回调方法+ MethodParameter.getParameterAnntation(Interface.class)对带有特定注解的参数或方法做处理；==
 
-//内嵌的tomcat，神策上的代码是否 配置个WebConfig registrationBean能运行web？
-
-//Bean工厂相关的后处理器，4个；Bean生命周期相关的后处理器，讲了2个？
-
-课程地址：
-
-https://www.bilibili.com/video/BV1P44y1N7QG/?vd_source=8bd5ab544d4cb8d9821752b68ce53b11
-
-#### 问题小结：
-
-- jdk代理的原理？如何自己实现代理？Cglib?? 代理的模拟实现自己手写下？？
-- 想体验下微软的面试？看下人家和我之间的差距？
-- 我一直在想，为什么cglib jdk代理要直接生成字节码？因为直接生成字节码才能避免反射调用吗？或者直接生成java类定义也是可以的；  ==所以代理的精华在于自动生成class定义/对应class的字节码？估计是先生成class再编译比较麻烦，因为要检测到哪里有自动生成定义的代码，所以干脆直接生成字节码==
-
-看源码技巧
-
-![image-20230130195909028](spring原理-photos/image-20230130195909028.png)
-
-![image-20230130200213405](spring原理-photos/image-20230130200213405.png)
-
-![image-20230130200315981](spring原理-photos/image-20230130200315981.png)
-
-![image-20230130200432114](spring原理-photos/image-20230130200432114.png)
-
-### BeanFactory和ApplicationContext
-
-#### 1.什么是BeanFactory//看类图ctrl alt u; 查看实现：ctrl alt 单击；
-
-![image-20230205170555379](spring原理-photos/image-20230205170555379.png)
-
-启动类的run方法返回值就是spring容器，
-
-ApplicationContext继承了BeanFactory; BeanFactory[里面有SingletonObjects]才是Spring的核心，ApplicationContext的部分功能是组合了BeanFactory的内容实现的[beanFactory是applicationContext的成员变量，可以断点看属性验证]；
-
-
-
-
-
-![image-20230202201258253](spring原理-photos/image-20230202201258253.png)
-
-#### 2.BeanFactory的功能(要看有哪些方法和实现哪些接口、还有成员变量可以有很多方法)//ctrl+F12看方法？ uml :选中+F4
-
-BeanFactory默认实现类  DefaultListableBeanFactory，可以管理所有Bean; 实现类中的DefaultSignletomBeanRegistry管理单例对象，可以反射查看所有单例；//下面的singletonObjects.get()里面的入参是什么情况？?也是个对象 说明beanFactory也是个单例对象，且保存在singletonObject中；看看 反射查看私有属性的示例代码？？
-
-![image-20230205165940508](spring原理-photos/image-20230205165940508.png)
-
-//只想看某个bean 话还可以过滤；
-
-![image-20230205170207500](spring原理-photos/image-20230205170207500.png)
-
-#### 3.ApplicationContext相对BeanFactory多了四种能力：//log输出日志会给出类名？@Autowired注入环境变量；
-
-![image-20230205164002835](spring原理-photos/image-20230205164002835.png)
-
-- 处理国际化资源的能力：MessageSource: context.getMessage() //入参：要翻译的对象，null，要翻译的语言 ； 依据key找到不同版本翻译结果，一般在messages打头的文件(不同语言的资源信息)；
-  - 浏览器的请求头提供请求的语言类型；
-
-![image-20230202204706856](spring原理-photos/image-20230202204706856.png)
-
-![image-20230903125353266](spring原理mac-photos/image-20230903125353266.png)
-
-
-
-- 通配符  获取资源（磁盘路径对应的资源）的能力：getResources()   //仅在类路径下找：classpath:....在jar包里面也查找：calsspath*:....
-
-![image-20230205172101764](spring原理-photos/image-20230205172101764.png)
-
-- getEvironment: 获取环境变量（系统环境变量等）  application.properties等；
-
-- 发布事件对象 (本质上是一种解耦方式，如用户注册后 发短信、发邮件等需要切换，为什么不直接调某个方法呢？直接调用一对一，发布事件是一对多，可以让多方自主选择操作内容；可以对标下AOP看哪个更优雅？)：context.pushlishEvent()发布事件，pushlishEvent ，入参 事件源要继承ApplicationEvent；事件监听器  参数和入参一致，@EventListener
-
-![image-20230903164721150](spring原理mac-photos/image-20230903164721150.png)
-
-![image-20230903130939734](spring原理mac-photos/image-20230903130939734.png)
-
-//单例+发送事件；  
-
-![image-20230205230425861](spring原理-photos/image-20230205230425861.png)
-
-### 第二讲：BeanFactory和ApplicationContext实现
-
-#### BeanFactory实现 //默认实现DefaultListableBeanFactroy 是一个核心的spring容器？  bean的定义，BeanFactory会依据定义创建对象
-
-- 容器默认为空，
-  - 若要添加bean需要：先创建bean定义(class scope 初始化  销毁)；然后注册bean（包括设置bean名字）；
-  - 不会主动调用beanFactory后处理器[负责补充Bean定义]，不会主动添加bean后处理器[负责bean生命周期扩展]
-    - 并不会去解析例如@Autowired注解；@Resource注解//javaee的注解；添加了BeanFactory后处理器[register扩展功能]并执行[postProcess，或者称为建立联系]之后，才会去解析对应注解；//BeanFactory后处理的主要功能，补充了一些bean定义，
-    - 并不会去解析如@Bean @Configuration注解；获取了BeanPostProcessor并执行addBeanPostProcessor建立后处理和BeanFactory的联系，而后创建bean才会执行后处理器，去解析对应注解 //Bean后处理器，针对ean生命周期的各个阶段提供扩展，
-  - 不会主动初始化单例：bean创建对象的时机：初始化的时候只会保存bean的定义、描述信息到beanFactory，当第一次用的时候，才会真正创建实例； 单例对象如果希望初始化时创建所有的单例对象，可以使用preInstantiateSingletons()：
-  - //不会解析${}与#{}
-  - //applicationContext会把上面这些常用的初始化操作都直接封装好；
-  - bean后处理器的排序：
-    - @autowired，bean容器中找实现类，依据类型[类或接口]匹配，有多个的时候[可以用qualifier指定？]会再匹配名字：即成员变量名字和类名，匹配上优先；@Resource对于多个的情况则可以用name属性指定名字； 
-    - 优先级：如果同时有@Autowired  @Resource，哪个会生效
-    - 默认优先级[优先级高的生效]@Autowired > @Resource，依据是后处理器添加的事件；可以用比较器控制优先级顺序，如 registerAnnotationConfigProcessors 排序依据为后处理器对象getOrder方法的返回值[后处理器通常会实现order接口]，数字小的排前面//同时使用两个注解时;
-    - 为什么sorted之后顺序会变？？和register一样的比较器啊？除非register只是进行了比较器的初始化，并没有把它用于排序，即执行；
-
-![image-20230205232232567](spring原理-photos/image-20230205232232567.png)
-
-![image-20230205233200331](spring原理-photos/image-20230205233200331.png)
-
-![image-20230206230400978](spring原理-photos/image-20230206230400978.png)
-
-![image-20230206231511602](spring原理-photos/image-20230206231511602.png)
-
-
-
-![image-20230206232613301](spring原理-photos/image-20230206232613301.png)
-
-![image-20230206232848214](spring原理-photos/image-20230206232848214.png)
-
-![image-20230206234006952](spring原理-photos/image-20230206234006952.png)
-
-#### ApplicationContext的常见实现和用法
-
-- 从xml读取bean定义
-  
-  - ClassPathXmlApplicationContext [比价古老]  基于xml路径读取配置；//通常使用    < context:annotation-config/>   标签就会自动加入一些有用的后处理器；
-  - FileSystemXmlApplicationContext : 基于文件路径读取配置；//绝对路径、相对路径均可
-  - xml读取beanDefiniton原理
-    - ApplicationContext是如何把beanDefination信息加载到beanFactory中的：用的XmlBeanDefinitonReader的 loadBeanDefinitions方法，入参可以是ClassPathResource()对象、FileSystemResource()对象；
-  
-- AnnotationConfigApplicationContext[非web环境] : 基于配置类的applicationContext //后处理器会自动加
-
-- AnnotationConfigServletWebServerApplicationContext[web容器]：既支持配置类，又支持内嵌servlet的Web容器---tomcat
-
-  - 这里演示不需要spring启动类就可以构建web环境
-  - spring的web服务器的核心是DispatcherServlet； DispatcherServlet要运行在tomcat服务器中；
-  - WebCOnfig中：前3步必须的[构建内置tomcat，构建dispatcherServlet，建立dipatcherServlet和tomcat容器之间的关联]，controller1可选[这里演示用，选web.servlet.mvc controller]，bean名字/开头并实现Controller就可以作为控制器；
-    - DispatcherServletRegistrationBean入参：路径一般配置/，所有请求都经过dispatcherServlet，再到controller
-
-- 示例代码
-
-  - ![image-20230208215603262](spring原理-photos/image-20230208215603262.png)
-
-  - ![image-20230208215718274](spring原理-photos/image-20230208215718274.png)
-
-  - ![image-20230208220500569](spring原理-photos/image-20230208220500569.png)
-
-  - ![image-20230212110308969](spring原理-photos/image-20230212110308969.png)
-
-  - ![image-20230212113647701](spring原理-photos/image-20230212113647701.png)
-  - ![image-20230212113533870](spring原理-photos/image-20230212113533870.png)
-  - ![image-20230212113738417](spring原理-photos/image-20230212113738417.png)
-
-
-
-### 第三讲 Spring Bean的生命周期
-
-#### Spring Bean生命周期的各个阶段
-
-- 带有@Component注解，所以会被@ComponentScan扫描到； @Autowired的参数  也会自动注入[值、变量]；@Value值注入，来自配置文件；
-- 执行顺序：构造，依赖注入，初始化，销毁[单例才调用]；
-- 自定义类实现部分bean后处理器[bean生命周期  下面的是按执行顺序]：实例化之前[调用构造之前]执行、实例化之后执行、依赖注入阶段执行、初始化方法执行前执行、初始化之后执行、销毁时执行方法；
-
-#### 模板设计模式：
-
-- 功能封装位List<interface>，则增删功能的时候 对List增删即可，无需改动主线代码；如下方的getBean()可以一直不改；
-
-- 固定不变的内容+接口调用称为了模板[变化的内容单独封装为接口]；模板方法不需修改，改业务代码即可；
-
-![image-20230212223508800](spring原理-photos/image-20230212223508800.png)
-
-![image-20230212213754091](spring原理-photos/image-20230212213754091.png)
-
-![image-20230212225551281](spring原理-photos/image-20230212225551281.png)
-
-![image-20230212225605205](spring原理-photos/image-20230212225605205.png)
-
-![image-20230212225841324](spring原理-photos/image-20230212225841324.png)
-
-
-
-![image-20230212232225441](spring原理-photos/image-20230212232225441.png)
-
-![image-20230212232233475](spring原理-photos/image-20230212232233475.png)
-
-![image-20230212232156415](spring原理-photos/image-20230212232156415.png)
-
-### 第四讲 Bean后处理器
-
-#### 常见的Bean后处理器
-
-- GenericApplicationContext相比AnnotationConfigApplicationContext  ，很干净，没添加bean后处理器等；refresh()方法会执行工厂后处理器 初始化单例等；
-
-- 常见后处理器相关注解：@Autowired @Value；@Resource @PostConstruct @PreDestroy;@ConfigurationProperties注解
-
-  - registerBean方法默认名称：包名、类名；设置AutowiredCandiateResoulver才能获取@Value注解内部的值注入；
-
-- tips
-
-  - ==@Autowired结合方法进行注入，可以打印信息查看是否注入成功；== 
-  - Spring注解积累，@ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定；
-
-  - ![image-20230907190211419](spring原理mac-photos/image-20230907190211419.png)
-  - //将后处理器加入到容器中
-  - ![image-20230213230017296](spring原理mac-photos/image-20230213230017296.png)
-
-- 示例代码
-  - ![image-20230212234621913](spring原理mac-photos/image-20230212234621913.png)
-  - ![image-20230213224839835](spring原理mac-photos/image-20230213224839835.png)
-  - ![image-20230212234601021](spring原理mac-photos/image-20230212234601021.png)
-  - ![image-20230213224732050](spring原理mac-photos/image-20230213224732050.png)
-  - @ConfigurationProperties注解：前缀+属性名去配置文件中找环境变量
-  - ![image-20230213225036305](spring原理mac-photos/image-20230213225036305.png)
-
-
-
-#### @Autowired bean后处理器执行分析
-
-- 准备工作
-  - registerSingleton方法使用相对简单[不需要常见BeanDefinition]；但是要提供成品bean，即不再走bean工厂创建流程；
-  - bean后处理器的依赖注入等阶段需要用到beanFactory，所以需要设置；
-- 真正执行@Autowired @Value解析的是postProcessProperties
-  - //直接调用Autowired相关方法的方式，理解Autowired的原理；  第一个参数传null，没有自己手工指定bean中的属性的值==
-  - 找到添加了@autowired注解的方法和属性；inject方法反射赋值；
-    - inject内部实现：
-      -  属性和方法胡被封装为DependencyDescriptor对象  入参：成员变量名，是否必须；////方法的注入，类似，但是多一个参数 表明要注入的是方法的哪一个参数，然后一个一个注入；
-      -  beanFactory.doResolveDependency   入参：DependencyDescripor，依据成员变量信息找到类型，进一步找到bean；
-- 示例代码：
-  - ![image-20230213232635463](spring原理mac-photos/image-20230213232635463.png)
-  - ![image-20230213231938822](spring原理mac-photos/image-20230213231938822.png)
-  - ![image-20230213232711589](spring原理mac-photos/image-20230213232711589.png)
-  - ![image-20230219144839839](spring原理mac-photos/image-20230219144839839.png)
-  - ![image-20230219145953099](spring原理mac-photos/image-20230219145953099.png)
-
-### 第五讲 BeanFactory后处理器
-
-**BeanFactory后处理器**
-
-- ConfigurationClassPostProcessor.class: 解析@Bean、@Component 、@Import 、@ImportResource
-- MapperScannerConfigurer[springboot自动配置]：扫描mybatis的mapper接口；
-  - 一般spring boot自动配置，SSM架构用的@MapperScanner底层也是MapperScannerConfigurer.class ；
-  - 入参：要指定扫描的包  //bd为beanDefinition；
-- 代码示例：
-  - ![image-20230219153011136](spring原理mac-photos/image-20230219153011136.png)
-
-**模拟@ComponentScan注解的解析：** //==getResources是要获取二进制文件，难怪spring bean对象得是动态代理？？==；
-
-- 获取ComponentScan注解中声明的包名，获取包下所有的类；
-  - AnnotationUtils.findAnnotation用于判断某个类上是不是有加注解并获取注解对象  参数----Config.class, 注解对象类型；  //==如何做到判断类上是否有注解底层原理？==
-  - 获取basePackages 包名，报名格式转换，   getResources获取所有类资源 ；
-- 判断每一个类是否加了@Component注解 ;  如果加了则生成对应的BeanDefinition，并注册到bean工厂
-
-  - CachingMetadataReaderFactory：获取类的元数据信息、注解信息等；用到的方法：getMeradataReader  getAnnotationMetadata().hasAnnotation()  getAnnotationMetadata().hasMetaAnnotation 
-- AnnotationBeanNameGenerator解析@Component获取bean的名字；
-  -  registerBeanDefinition将bean注册到工厂中；
-  -  getResources是在class目录下扫描到的，扫的是字节码？
-- 将自定义的类抽取成独立的beanFactory后处理器，ComponentScanPostPostProcessor实现的BeanFactoryPostProcessor的postProcessBeanFactory方法会在refresh的时候回调 //可能要吧ConfigurableListableBeanFactory类型需要转换一下；getResource换一个类去调用；
-- 示例代码：
-  - ![image-20230219155926088](spring原理mac-photos/image-20230219155926088.png)
-  - ![image-20230219160528207](spring原理mac-photos/image-20230219160528207.png)
-  - ![image-20230226133516051](spring原理mac-photos/image-20230226133516051.png)
-  - ![image-20230226143006514](spring原理mac-photos/image-20230226143006514.png)
-  - ![image-20230226143107701](spring原理mac-photos/image-20230226143107701.png)
-  - ![image-20230226143033100](spring原理mac-photos/image-20230226143033100.png)
-  - ![image-20230226143213740](spring原理mac-photos/image-20230226143213740.png)
-
-**模拟@Bean注解的解析**
-
-- CacheingMeradataReaderFactory.getMetadataReader 加载Config类信息，进一步获取类中被@Bean注解标注的方法；
-- 遍历  方法： BeanDefinitionBuilder.genericBeanDefiniton().setFactoryMethodOnBean 生成 对应BeanDefiniton 入参----方法名、工厂类名
-  - 注意区别，这里生成BeanDefinition的不是config类[是个工厂类]，而是config类中@Bean注解标注的方法；
-- 将BeanDefiniton注册到Bean工厂 入参----bean的名字、beanDefiniton对象（一般就用工厂方法名作为bean的名字）；
-- 补充
-  - //Bean定义方法有入参的话，需要指定自动装配模式 builder.setAutowiredMode  
-  - Bean中有属性的话， getAnnotationAttributes().get获取@Bean中的属性；如果属性有值，则进行对应的操作(如有initMehtod属性则调用setInitMethodName)
-
-- ==tips: 捕捉异常，ctrl+alt+T==
-- 示例代码：目前配置类路径和类名还是写死，其实要找@Configuration标注的所有类；
-  - ![image-20230226170127667](spring原理mac-photos/image-20230226170127667.png)
-  - ![image-20230226170218062](spring原理mac-photos/image-20230226170218062.png)
-
-**模拟@MapperScanner注解的解析**
-
-- 前置说明：
-  - beanFactory只能管理对象，要添加接口则需要接口转对象； 用MapperFactoryBean<T>封装，并指定sqlSessionFactory即可；
-    - 
-- @MapperScanner实现    实现接口BeanDefinitionRegistry(也是DefaultListableBeanFactory的父接口，直接就有registerBeanDefiniton方法)
-  - 之前的后处理器实现的接口不好，用了一个强转，建议使用：BeanDefinitionRegistryPostProcessor，直接有registBeanDefiniton方法；
-  - 
-
-- 实现流程：
-  - getResources加载class路径下所有文件，
-  - for  resource :getMetadataReader 获取文件元数据信息，getClassMetadata进一步获取类信息
-    - if 为接口， 
-      - BeanDefinitionBuilder.genericBeanDefinition()获取BeanDefinition，并设置构造方法参数值[addConstructorArgValue]，设置装配模式，注册对应的bean；
-        - setAutowiredMode 设置了自动装配模式后，factory会自动去工厂中找sqlSessionFactory并装配；这里的生成bean名字时generateBeanName的入参不再是类而是金额口，因为所有接口的封装类都是MapperFactoryBean；
-  - 代码示例：
-    - ![image-20230909141720183](spring原理mac-photos/image-20230909141720183.png)
-    - ![image-20230226172036075](spring原理mac-photos/image-20230226172036075.png)
-    - ![image-20230226204740122](spring原理mac-photos/image-20230226204740122.png)
-    - ![image-20230226205207986](spring原理mac-photos/image-20230226205207986.png)
-
-### 第六讲
-
-#### Aware接口、InitializingBean接口简介
-
-- 功能
-
-  - aware接口：bean名字注入、BeanFactory容器注入、ApplicationContext容器注入、解析${}等
-  - InitializingBean接口：为bean添加初始化方法
-  - ![image-20230226205819279](spring原理mac-photos/image-20230226205819279.png)
-
-- 核心亮点：在配置类中存在BeanFactoryPostProcessor的情况，@Aturowired @PostConstuct等扩展功能会失效，此时可以使用Aware接口、InitializingBean接口替代实现bean名字注入、bean初始化方法设置等操作；
-
-- 用法
-
-  - /注入时会回调，可以获取自己需要的信息，先回调Aware，再回调InitializingBean；两个接口内置功能[不加后处理器也能生效，且不会失效]不同于@Aturowired @PostConstuct扩展功能；
-  - ![image-20230226211611809](spring原理mac-photos/image-20230226211611809.png)
-  - ![image-20230226212034237](spring原理mac-photos/image-20230226212034237.png)
-
-- **加了后处理器@Autowired等注解依然失效的情形**：配置类内部添加了BeanFactoryPostProcessor的Bean，使得@Atrowired @PostConstruct失效 
-
-  - context.refresh()执行顺序：1.beanFactory后初期，2.添加bean后处理器，3.初始化单例
-
-  - 失效原因分析：Java配置类包含BeanFactoryPostProcessor，故提前创建并初始化[为了执行BeanFactoryPostProcessor]，而此时BeanFactoryPostProcessor  BeanPostProcessor都没准备好，故配置类中的@Autowired等注解都无法解析
-  - 解决方法1：
-    - 使用IntializingBean、Aware接口替代@Autowired   @PostConstruct；
-    - ![image-20230226213130208](spring原理mac-photos/image-20230226213130208.png)
-    - ![image-20230226214249847](spring原理mac-photos/image-20230226214249847.png)
-    - ![image-20230226214225873](spring原理mac-photos/image-20230226214225873.png)
-
-### 第七讲  初始化和销毁
-
-- 初始化的三种方法
-  - @PostConstruct     后处理器，扩展功能，第一位执行；//aware在1 2之间执行；
-  - 实现initializingBean接口     第二位执行；//上一讲提到的aware接口则是1.5位执行
-  - @Bean(initMethod = "init3")    第三位执行
-
-- 销毁的三种方法，优先级也是按顺序
-  - @PreDestroy
-  - 实现disposableBean接口
-  - @Bean(destroyMethod = "destroy3")
-- 代码示例：
-  - ![image-20230910225408139](spring原理mac-photos/image-20230910225408139.png)
-  - ![image-20230910225417959](spring原理mac-photos/image-20230910225417959.png)
-  - ![image-20230910230041801](spring原理mac-photos/image-20230910230041801.png)
-
-### 第八讲  Scope
-
-- spring中scope的种类//spring5  默认single
-  - singleton(容器关闭时销毁),  prototype（自行调用销毁）,  request（存在web的request域中，生命周期同request，重发请求会销毁）,  session(会话域，长时间不发/重新打开浏览器/调用session的invalid方法 请求会销毁),  application（应用程序域  启动时入servlet context，似乎spring不会自动销毁 即使你关闭应用）
-
-- 单例的bean使用其它域的类，必须用@Lazy [否则 注入的类scope会失效，见下文，本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛IllegalAccessException异常；
-
-- 解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置  --add-opens；
-
-- 测试案例参考配制 session超时时间10s：但是实际的超时时间是max(超时时间配置，检测session超时的频率)
-- 示例代码
-  - ![image-20230304155219903](spring原理mac-photos/image-20230304155219903.png)
-  - ![image-20230304155137529](spring原理mac-photos/image-20230304155137529.png)
-  - ![image-20230304155559884](spring原理mac-photos/image-20230304155559884.png)
-  - ![image-20230304160017798](spring原理mac-photos/image-20230304160017798.png)
-
-
-
-- 单例注入多例，scope会失效（解决方案本质上都是获取多例的时候多一层） E（单例）有属性发（多例）；
-  - 原因：对于单例对象只执行了一次初始化，所以内部属性的注入也只发生了一次
-    - 
-  - 解决方法
-    - 四种解决方法思想上都是一样的：推迟其它scope bean的获取，代理  工厂  applicatioinContext
-    - 1.添加@Lazy解决  
-      - 加了@Lazy之后注入的是代理对象，代理类虽然不变，但是使用代理对象的方法时会创建新的多例代理对象；
-    - 2.使用@Scope中的属性proxyMode解决 ，底层原理也是生成代理
-    - 3.(推荐)使用工厂类解决，由工厂创建多例对象
-    - 4.(推荐)注入一个ApplicationContext，调用getBean方法解决；
-
-- 示例代码
-  - ![image-20230305135529245](spring原理mac-photos/image-20230305135529245.png)
-  - ![image-20230305135609810](spring原理mac-photos/image-20230305135609810.png)
-  - ![image-20230911122859580](spring原理mac-photos/image-20230911122859580.png)
-  - ![image-20230305140022017](spring原理mac-photos/image-20230305140022017.png)
-  - ![image-20230305140156490](spring原理mac-photos/image-20230305140156490.png)
-  - ![image-20230911124100586](spring原理mac-photos/image-20230911124100586.png)
-
-
-
-### 第九至十一讲  AOP的四种实现方式
-
-- AOP的实现方式：
-  - 代理，jdk+cglib
-  - aspectj[编译时改写class实现增强]，可以增强静态方法[代理不能增强静态方法]
-  - agent[类加载阶段修改class实现增强]，可以突破代理实现aop的限制：一个方法调用另一个方法，被调用的方法无法增强(因为另一个方法会通过this调用，不走代理)；
-
-- aop之ajc增强
-  - 切面的实现方式不止代理，MyAspect监听MyService，拿到的MyService对象名字还是MyService; 编译的时候改写了原有的类  增加了前置增强；
-  - classes路径下找到编译后的MyService文件，==拖拉文件到idea可以反编译！！==  添加apectJ插件，使用@Aspect注解[这里切面是由ajc编译器管理的，所以MyAspect不需要添加@Component注解] //idea自带javac编译器不行，要借助插件用aspectJ编译器，可以用maven的compile；
-  - 优点：可以增强静态方法[代理不能增强静态方法]
-- 示例代码：
-  - ![image-20230912183157543](spring原理mac-photos/image-20230912183157543.png)
-  - ![image-20230912184347648](spring原理mac-photos/image-20230912184347648.png)
-  - ![image-20230912184322766](spring原理mac-photos/image-20230912184322766.png)
-  - ![image-20230912182923106](spring原理mac-photos/image-20230912182923106.png)
-
-
-
-- Aop实现之agent类加载增强
-  - 需要配置一个JVM参数并准备好jar包；-javaagent
-  - 类加载阶段实现修改字节码 实现增强
-  - 优点：可以突破代理实现aop的限制：一个方法调用另一个方法，被调用的方法无法增强(因为另一个方法会通过this调用，不走代理)；
-  - 阿里巴巴的arthas工具：可以实现运行时的反编译（agent类加载才实现的增强，直接看target中编译结果还是没有增强）
-- 示例代码：
-  - ![image-20230305145656423](spring原理mac-photos/image-20230305145656423.png)
-  - ![image-20230305145721931](spring原理mac-photos/image-20230305145721931-1694520301601.png)
-  - ![image-20230305145922238](spring原理mac-photos/image-20230305145922238.png)
-  - ![image-20230305150119707](spring原理mac.assets/image-20230305150119707.png)
-  - ![image-20230305150228904](spring原理mac.assets/image-20230305150228904.png)
-  - ![image-20230912195711190](spring原理mac-photos/image-20230912195711190.png)
-
-#### AOP实现之代理   proxy//==简写为lamda快捷键？？==
-
-- jdk代理java自带；cglib是第三方的库；
-
-- 代理类没有源码，运行时直接生成字节码；
-
-##### jdk只能针对接口代理
-
-- 参数一：classLoader；
-- 参数二：要实现的接口可以一次实现多个接口；
-- 参数三：invocationHandler，规定被代理方法具体的行为；
-- invocationHandler的三个参数：
-  - 代理对象
-  - 真正执行的方法
-  - 方法的参数
-- 特点：被代理类和代理类是兄弟关系，不能互相强转，且被代理类可以是final;
-- 示例：
-  - ![image-20230912204249457](spring原理mac-photos/image-20230912204249457.png)
-  - ![image-20230912204203763](spring原理mac-photos/image-20230912204203763.png)
-
-##### cglib实现代理
-
-- 参数一：被代理类
-- 参数二：Callback的子接口，MethodInterceptor //内部定义具体的行为
-- MethodInterceptor的四个参数：代理对象，当前代理对象中执行的方法，方法的参数，MethodProxy【？？？】
-- 使用methodProxy可以避免反射调用，methodProxy的invoke传被代理对象+参数[spring使用这种]，或者用invokeSuper只传  代理对象本身+参数
-- 特点：被代理类和代理类是父子关系，可以相互强转，且被代理类不能是final；父类方法加了final也不能被增强，代理类需要重写被代理方法；
-- 示例
-  - ![image-20230305153521286](spring原理mac.assets/image-20230305153521286.png)
-  - ![image-20230305153957518](spring原理mac.assets/image-20230305153957518.png)
-
-### 第十二讲 jdk代理原理
-
-- asm运行时动态生成代理类的字节码；//spring框架 jdk
-
-- //代理的场景：日志；权限；事务的增强？
-- 模拟代理实现1：
-  - ![image-20230914191247050](spring原理mac-photos/image-20230914191247050.png)
-- 模拟代理实现2：具体的代理方法在定义代理对象的时候指定，代理类只做代理方法的调用； //对象有多个方法时,不把代理的内容固定死
-  - ![image-20230914191521059](spring原理mac-photos/image-20230914191521059.png)
-- 模拟代理实现3：反射调用的方法入参增加  mthod对象、方法参数   //确定代理是调目标的哪个方法
-  - ![image-20230914192053586](spring原理mac-photos/image-20230914192053586.png)
-- tips：ctrl + shift +enter，查看完整的提示并选择；
-
-- 其它：还需要增加返回值处理（invoke是Object），增加代理对象参数，异常处理（检查异常、throwable异常不能直接抛，需要转换下再抛）；方法名声明为静态变量；
-  - ![image-20230914193923708](spring原理mac-photos/image-20230914193923708.png)
-- jdk的代理会继承Proxy类，内含一个InvocationHandler属性，还有构造方法，所以可以直接用
-  - ![image-20230914194258624](spring原理mac-photos/image-20230914194258624.png)
-- arthas工具查看反编译代理类源码：[powershell]需要知道类名才能反编译；程序要保持运行状态，可以System.in.read()；//直接看jdk代理源码基本看不懂，因为用的asm动态生成代理类的字节码；
-
-  - ![image-20230305164327370](spring原理mac.assets/image-20230305164327370.png)
-  - ![image-20230305164452865](spring原理mac.assets/image-20230305164452865.png)
-  - ![image-20230305164535950](spring原理mac.assets/image-20230305164535950.png)
-  - ![image-20230305164609432](spring原理mac.assets/image-20230305164609432.png)
-
-#### jdk代理字节码生成
-
-- jdk代理没有源码，运行期间动态生成字节码，用的asm[spring jdk使用很多]
-- 安装idea插件 java源码转换为asm代码，然后可以转换为字节码；但不能很好地在高版本的jdk里面工作[java8可以]；
-  - ![image-20230305165206211](spring原理mac.assets/image-20230305165206211.png)
-- 编写一个代理类的代码
-  - ![image-20230305165934972](spring原理mac.assets/image-20230305165934972.png)
-  - 编译， 右键-- show Bytecode outline，会转换为ASMified  即asm代码；拷贝代码、粘贴；需要导下包，导入spring的包即可；
-  - ClassWriter类调用生成字节码；cw.visit 就是生成一个代理对象（@Lazy就是做这个事情）；定义类的成员变量、方法[字节码级别];  cw.toByteArray（）得到的数组就是Class字节码； 把byte数组写进ckass文件；
-  - 例如 代理类转asm-->生成字节码-->反编译   代码和原来的java代码一致：
-  - ![image-20230308223140701](spring原理mac-photos/image-20230308223140701.png)
-  - 直接在内存中使用字节码，defineClass依据字节数组生成类对象；  入参：类名、字节数组、字节数组起始为位置、长度；最后创建实例；   
-  - ![image-20230308223951386](spring原理mac-photos/image-20230308223951386.png)
-  - ![image-20230308224058618](spring原理mac-photos/image-20230308224058618.png)
-  - 具体字节码的生成要看asm的api，还要熟悉jvm的指令，成本有点高；
-
-#### jdk反射优化//反射调用一般效率较低
-
-- method.invoke本质上是通过methodAccessor实现类实现；
-- 前16次用本地的java native api， MethodAccessor，性能低；第17次  换了实现类 [生成了一个代理类，Arthas查看得知，第17次直接直接正常调用，为了优化一个方法的反射调用  直接生成了 代理类，就可以直接调用]，提高了性能； 
-- ![image-20230308225422323](spring原理mac-photos/image-20230308225422323.png)
-- ![image-20230308225547930](spring原理mac-photos/image-20230308225547930.png)
-
-- ![image-20230308225402202](spring原理mac-photos/image-20230308225402202.png)
-
-### 第十三讲至十四讲  cglib代理原理及MethodPorxy原理
-
-- 使用示例继承父类
-  - ==MehodInterceptor.intercept 入参: 代理类对象   当前正在执行的方法   方法实参数组 **mehtodProxy[后面有说明]**==
-- MthodProxy原理
-  - ==MehtodProxy.create的五个参数：目标类型  代理类型 “参数、返回类型”  带增强功能的方法名 带原始功能的方法名;==//()V表示入参为空，返回值为void; ()表示入参为int 返回值 void
-    - 方法代理实现每次都直接调用；
-    - methodProxy.invoke()内部无反射，结合目标用；methodProxy.invoke()内部无反射，结合代理用；
-  - methdoProxy避免反射调用的原理，生产的代理类继承了抽象类FastClass;也是直接生成字节码，没有Java的源码；==核心的两个方法 getIndex[获取目标方法的编号，方法签名转换为整数编号] invoke[依据整数编号正常调用目标对象的方法]==； Proxy方法中初始化代码，调用create方法的时候会生成targetClass代理对象；
-    - 会生成两个了分别配合 目标类使用和代理类使用
-- jdk和cglib的区别：
-  - jdk第17次有优化，针对一个方法产生一个代理类， 反射调用-->直接调用；==cglib第一次调用就会产生代理并直接调用，无需反射调用==，
-  - jdk一个方法产生一个代理对象；cglib优点：代理会生成两个FastClass[一个配合目标对象调用，一个配合代理对象调用]，每个FastClass类里面可以匹配多个方法，相比jdk代理生成的代理类数量少一些； //再汇总下其它区别： 如jdk代理需要实现接口；cglib生成子类等？
-- 示例代码：cglib代理使用
-  - ![image-20230319142730188](spring原理mac.assets/image-20230319142730188.png)
-  - ![image-20230319143141053](spring原理mac.assets/image-20230319143141053.png)
-  - ![image-20230319143558529](spring原理mac.assets/image-20230319143558529.png)
-  - ![image-20230319143626105](spring原理mac.assets/image-20230319143626105.png)
-  - ![image-20230319143813939](spring原理mac.assets/image-20230319143813939.png)
-
-- 代码示例：MehtodProxy使用
-  - ![image-20230319150416493](spring原理mac.assets/image-20230319150416493.png)
-  - ![image-20230917160944782](spring原理mac-photos/image-20230917160944782.png)
-  - ![image-20230319150845297](spring原理mac.assets/image-20230319150845297.png)
-
-- tips:IDEA上下分屏展示，直接拖文件名框到  编辑页面下方即可；
-- methodProxy.invoke(target, args)模拟实现；结合目标对象使用的class;   TargetFastClass
-  - ![image-20230319151421709](spring原理mac.assets/image-20230319151421709.png)
-  - ![image-20230319155548583](spring原理mac.assets/image-20230319155548583.png)
-  - ![image-20230319155732395](spring原理mac.assets/image-20230319155732395.png)
-  - ![image-20230319160219530](spring原理mac.assets/image-20230319160219530.png)
-  - ![image-20230319161820487](spring原理mac.assets/image-20230319161820487.png)
-- methodProxy.invoke()模拟实现    结合代理对象使用， 
-  - 和TargetFastClass类似，不同的是方法编号获取代理类的方法编号；
-  - 注意：invoke调的是代理类的原始功能方法  因为自定义的intecept方法使用methodProxy代理之前已经进行过增强了；
-  - ![image-20230319162337876](spring原理mac.assets/image-20230319162337876.png)
-  - ![image-20230319162908632](spring原理mac.assets/image-20230319162908632.png)
-  - ![image-20230319162954823](spring原理mac.assets/image-20230319162954823.png)
-
-### 第十五讲spring选择代理
-
-- 基础概念
-
-  - **切面Aspect：通知+切点**； //可以有多组 通知+切点；
-  - advisor是细粒度的的切面：包含一个通知和切点；
-
-- ProxyFactory会依据具体情况选择 cglib或者jdk增强，
-
-  - proxyFactory的父类ProxyConfig有一个 proxyTargetClass属性
-  - proxyTargetClass为false且目标 实现  接口，用jdk实现
-  - proxyTargetClass为false且目标 没有实现 接口，用cglib实现
-  - proxyTargetClass为true，用cglib实现
-
-- 代码示例： 
-
-  - ![image-20230319164309395](spring原理mac.assets/image-20230319164309395.png)
-  - AOP使用示例
-    - org.springframework.aop.Pointcut
-
-    - ![image-20230319164910490](spring原理mac.assets/image-20230319164910490.png)
-
-    - org.aopalliance.intercept.MethodInterceptor //本质上是一个环绕通知
-    - ![	](spring原理mac.assets/image-20230319165552181.png)
-
-    - ![image-20230319165937659](spring原理mac.assets/image-20230319165937659.png)
-
-- ProxyFactory使用jdk： setInterfaces     setPrxyTargetClass
-
-  - ![image-20230322220034855](spring原理mac-photos/image-20230322220034855.png)
-  - ![image-20230322220228401](spring原理mac-photos/image-20230322220228401.png)
-
-  
-
-### 第十六讲 切点匹配
-
-- 切点 表达式匹配：execution(返回值  包名-类名-方法名 ) + [底层是调用]pointcut.matches方法；
-- 切点 注解匹配：@annotation(注解的 包名-类名)  + [底层是调用 MerthodMatcher接口]matches方法；
-- @Transactional  可加方法、类[所有方法]、接口[实现该接口的类的所有的接口中的方法]； //和前面两种情况不同
-  - 需要换一个pointcut，使用StaticMethodMatcherPointcut
-  - MergeAnnotaions可以获取方法  类上的注解信息；默认只差一层，即仅本类，不会搜父类 接口，设置为SearchStrategy.TYPE_HIERARCHY
-- 代码示例：模拟实现 切点表达式匹配，切点的注解匹配，@Transactional 如何解析方法 类上 接口上的注解
-  - ![image-20230322221158226](spring原理mac-photos/image-20230322221158226.png)
-- ![image-20230322223204543](spring原理mac-photos/image-20230322223204543.png)
-- ![image-20230322223228071](spring原理mac-photos/image-20230322223228071.png)
-
-### 第十七讲 从@Aspect到Advisor, @Aspect Spring底层原理
-
-切面用法：高级切面+低级切面；
-
-- 高级切面用法：@Aspect + @Before/@After
-- @Advisor用法：自己定义Bean——Advisor[低级切面]  MethodInterceptor[通知的一种]
-  - GenericApplicationContext是一个干净的容器；注册配置类  ConfigurationClassPostProcessor后处理器解析配置类内部的@Bean注解
-- tips:转换为lamda快捷键？？？alt+enter看提示；
-- ![image-20230322224530882](spring原理mac-photos/image-20230322224530882.png)
-- ![image-20230322224829058](spring原理mac-photos/image-20230322224829058.png)
-- ![image-20230322225053015](spring原理mac-photos/image-20230322225053015.png)
-
-
-
-AnnotationAwareAspectJAutoProxyCreator.class介绍
-
-- 定义：bean后处理器，一  找到所有的切面，包括高级切面Aspect[会转换成低级切面]和低级切面Advisor；二  依据切面创建代理对象；
-
-- ==通常生效时间：依赖注入之前   初始化之后 //创建-->  (* )依赖注入-->初始化(* )    注意和第六讲，注解失效结合学习下，对生命周期了解更深==
-
-  - springbean生命周期分四个阶段：构造，依赖注入，初始化，销毁[单例才调用]；
-
-  - bean后处理器生效的时间通常在：  实例化[或者说调用构造]前后   依赖注入   初始化前后  销毁时执行；
-
-  - 配置类内部添加了BeanFactoryPostProcessor的Bean，使得@Atrowired @PostConstruct失效 ； 
-
-    - 原因：\- context.refresh()执行顺序：1.beanFactory后处理器，2.添加bean后处理器，3.初始化单例
-
-      \- 失效原因分析：Java配置类包含BeanFactoryPostProcessor，故提前创建并初始化[为了执行BeanFactoryPostProcessor]，而此时BeanFactoryPostProcessor  BeanPostProcessor都没准备好，故配置类中的@Autowired[通过bean后处理器解析的]等注解都无法解析
-
-  - 这里的AnnotationAwareAspectJAutoProxyCreator只是一个普通的bean后处理器，生效时间为依赖注入和初始化之后；
-
-- 核心方法介绍：
-  - findEligibleAdvisors ：找到所有有资格的低级切面 List， 高级切面会被转换成低级切面；入参：目标类[查看容器中所有切面是否和目标类匹配]，bean在容器的名字[可以为空]
-    - 返回值时List<Advisor>
-    - spring容自带一个切面你 ExposeInvocationInterceptor.ADVISOR
-  - wrapIfNecessary:是否有必要创建代理，目标有满足的切点则创建代理对象；
-    - 是否有必要创建代理：内部也是调用findEligibleAdvisors，返回值不为空说明有必要；
-    - 返回值是代理/原始对象
-    - 入参：目标对象、bean名字[测试可以随便给]、参数三 不重要；
-  
-- tips:调用protected方法，反射，用子类调，在同一个包下；
-
-- 代码示例：==模拟spring框架==查找所有切面及是否需要创建代理
-  - ![image-20230329214318042](spring原理mac-photos/image-20230329214318042.png)
-  - ![image-20230329214751813](spring原理mac-photos/image-20230329214751813.png)
-  - ![image-20230329215404758](spring原理mac-photos/image-20230329215404758.png)
-  - ![image-20230929161307111](spring原理mac-photos/image-20230929161307111.png)
-
-第17讲 代理创建时机
-
-- //通常是 创建之后、依赖注入之前 或者 初始化之后 二选一；//==我看后续的视频似乎是还有 依赖注入和初始化之间创建代理????应该理解为之前，如bean2依赖bean1，注入bean1之前会创建代理对象==
-- 符合创建时机2[初始化之后]：bean2注入了bean1，bean1的foo()匹配了切点[需要被增强]
-  - bean1注入容器时：注入的是bean1的代理对象[要调用增强方法]；  bean2注入bean1时注入的也是代理对象
-
-- 符合创建时机1[依赖注入之前]：bean1  bean2循环依赖；并暂存于==二级缓存？？？？== bean1的代理对象在bean1的构造--bean1的初始化之间被创建，因为依赖注入需要  代理对象被提前创建；
-  - bean1注入容器时：发现要注入bean2，于是进入bean2的流程【的构造  依赖注入  初始化】，bean2的依赖注入需要bean1代理对象，于是bean1的代理提前注入，最后bean1的依赖注入  初始化
-
-- 无循环依赖的情况下，直接调用bean1注入bean2的set和bean1的初始化，应该调用原始对象的，而不是代理[初始化没被调用说明bean1还没准备好]；
-- 示例代码：bean2依赖bean1 + 互相依赖； 配置准备   后处理器[解析@Aspect  @Autowired  @PostConstruct]，Bean[Advisor  通知]
-- ![image-20230329222446471](spring原理mac-photos/image-20230329222446471.png)
-- ![image-20230329221344788](spring原理mac-photos/image-20230329221344788.png)
-- ![image-20230329221457507](spring原理mac-photos/image-20230329221457507.png)
-- ![image-20230329221649561](spring原理mac-photos/image-20230329221649561.png)
-- ![image-20230329221945241](spring原理mac-photos/image-20230329221945241.png)
-- ![image-20230329222321324](spring原理mac-photos/image-20230329222321324.png)
-
-**切面的生效顺序**
-
-- 可以自己设置顺序，高级切面和低级切面的顺序设置方法如下：
-  - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
-  - 低级切面：setOrder  ; //@Bean方法上的 @Order 无法生效；
-    - 默认值优先级最低
-- 代码示例：
-  - ![image-20230331184739833](spring原理mac-photos/image-20230331184739833.png)
-
-
-
-第17讲 高级切面转换为低级切面
-
-- 高级切面的注解有五种，@Before  @After @AfterReturning @AfterThrowing @Around
-- 遍历方法，查看方法的注解，创建切点  不同注解对应的通知类  切面[下面只是一种通知类的示例]；
-  - 一些有趣的方法：method.isAnnotationPresent、method.getAnnotation(Before.class).value()
-
-- ![image-20230331190751095](spring原理mac-photos/image-20230331190751095.png)
-- ![image-20230331190922746](spring原理mac-photos/image-20230331190922746.png)
-
-### 第18讲 静态通知调用
-
-- 动态通知与静态通知：
-
-  - 静态通知：通知方法没有入参，即不带参数绑定，性能相对高，执行是不需要切点； 
-  - 动态通知：通知方法有入参，需要参数绑定，执行时需要切点；//通知的实参由目标方法的入参提供
-
-- 注入容器的时候：不同通知最终统一转换为环绕通知 MethodInterceptor，并添加到调用链MethodInvocation中，适配器模式体现：把一套接口转换成另一套接口【转换的类对象成为适配器对象】，以便适合某种场景的调用
-
-- 最后的效果是想达到下述的 套娃的效果，由外到内进，由内到外出；
-
-- 代理对象执行方法的时候：会调用getInterceptorsAndDynamicInterceptionAdvice会把不同通知转换成环绕通知
-
-  - 入参：目标方法对象  目标类型
-  - 解析的底层原理：spring中提供的适配器类包括 MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter等; 一般适配器包含两个方法：supportAdcice判断是否是指定的Advice； getInterceptor用于进行类型转换；
-
-- 代理对象执行方法的时候：创建并执行调用链 methodInvocation【环绕通知+目标  组成】，常用的实现为ReflectiveMethodInvocation；调用proceed（）会执行所有的环绕通知和目标；
-
-  - 某些通知内部需要用到调用链，需要将MethodInvocation放入当前线程；可以最外层环绕通知实现放入当前线程（addAvice(ExposeInvocationInterceptor.INSTANCE)）；
-
-- 示例代码：模拟spring底层实现
-
-  - ![image-20230930210922030](spring原理mac.assets/image-20230930210922030.png)
-  - ![image-20230401145634031](spring原理mac-photos/image-20230401145634031.png)
-
-  - ![image-20230930150448224](spring原理mac.assets/image-20230930150448224.png)
-
-  - ![image-20230401150606788](spring原理mac-photos/image-20230401150606788.png)
-
-  - ![image-20230401152121979](spring原理mac-photos/image-20230401152121979.png)
-
-  - ![image-20230930155625954](spring原理mac.assets/image-20230930155625954.png)
-
-  - ![image-20230401161906834](spring原理mac-photos/image-20230401161906834.png)
-
-  - ![image-20230401162201172](spring原理mac-photos/image-20230401162201172.png)
-
-  - ![image-20230401162211740](spring原理mac-photos/image-20230401162211740.png)
-
-  - ![image-20230401162226966](spring原理mac-photos/image-20230401162226966.png)
-
-
-**模拟实现调用链MethodInvocation**
-
-无参数绑定通知链执行过程，责任链模式体现 
-
-- 本质就是一个递归调用：先调用所有的环绕通知，最后调用目标
-  - 这里的递归比较隐晦，proceed没有直接调用自己，调用invoke()[invoke内部调用proceed]
-
-- 责任链模式：这里的连就是MethodInvocation，元素对应 环绕通知；tomcat过滤器 structs2的拦截器类似；
-- 示例代码 模拟实现调用链MethodInvocation：
-  - ![image-20230401170127067](spring原理mac-photos/image-20230401170127067.png)
-  - ![image-20230401170144096](spring原理mac-photos/image-20230401170144096.png)
-  - ![image-20230401170152734](spring原理mac-photos/image-20230401170152734.png)
-
 
 ### 第十九讲 动态通知调用
 
@@ -734,7 +17,7 @@ AnnotationAwareAspectJAutoProxyCreator.class介绍
 
 ### 第二十讲：RequestMappingHandlerMapping与RequestMappingHandlerAdapter
 
-**diapatcherServlet**
+**diapatcherServlet简介**
 
 - 定位：springMVC程序的入口点；
 - 示例代码的spring容器选择实现[需要支持内嵌tomcat容器]：AnnotationConfigServletWebServcerApplicationContext //  AnnotationConfig表示指支持java配置类方式构建容器；ServletWebServer支持内嵌 web容器（如内嵌tomcat）；
@@ -755,7 +38,6 @@ AnnotationAwareAspectJAutoProxyCreator.class介绍
 dispatcherServlet初始化内容
 
 - dispatcherServlet-->onRefresh-->initStrategies，会初始化下面的九类组件；
-  - ![image-20230405112543985](spring原理mac-photos/image-20230405112543985.png)
   - initMultipartResolver：初始化  文件上传解析器
   - initLocaleResolver：初始化 本地化解析器，属于哪一种国家、地区、语言；//有多种实现：请求头中accept头获取相关信息  从cookie中获取等；
   - //initThemeResolver：不重要
@@ -765,11 +47,13 @@ dispatcherServlet初始化内容
     - handler：具体处理请求的代码，有多种形式；
   - initHandlerExceptionResolvers   解析异常
   - //后面三个不重要
+  - ![image-20230405112543985](spring原理mac19.assets/image-20230405112543985.png)
 - initHandlerMappings代码阅读
+  - 找到所有的HandlerMapping（detectAllHandlerMapping如果为真如果当前容器没有还会去父容器中找），如果容器中有，优先使用容器中的HandlerMapping；如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
   - ![image-20230405113052468](spring原理mac-photos/image-20230405113052468.png)
   - ![image-20231005111159033](spring原理mac.assets/image-20231005111159033.png)
   - ![image-20231005111426917](spring原理mac.assets/image-20231005111426917.png)
-  - 找到所有的HandlerMapping（detectAllHandlerMapping如果为真如果当前容器没有还会去父容器中找），如果容器中有，优先使用容器中的HandlerMapping；如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
+  
 
 **RequestMappingHandlerMapping //流程：请求到handlerMapping映射到控制器，并和拦截器包装成调用链 chain；然后handlerAdapter解析参数；然后执行方法；最后 返回值 处理器对返回值进行解析；**
 
@@ -777,31 +61,38 @@ dispatcherServlet初始化内容
 - `初始化的时候`，先到当前容器下找到所有控制器类，查看控制器有@RequestMapping及其派生注解【包括GetMapping等】的方法并记录  路径--->控制器方法  信息【getHandlerMethods方法可以查看】并保存到RequestMappingHandlerMapping；
 - 默认的RequestMappingHandlerMapping 创建的RequestMappingHandlerMapping对象会作为dispatcher的属性，但是不会放入Spring容器中； 可以在WebConfig中，添加RequestMappingHandlerMapping定义：
   - ![image-20230405135550465](spring原理mac-photos/image-20230405135550465.png)
-- 模拟 依据路径获取控制器方法，可以用getHandler方法，入参为httpServletRequest请求对象；//返回的HandlerExcecutionChain不仅包含了handlerMethods[即控制器的方法信息]，还包含了拦截器对象；
+  - 模拟 依据路径获取控制器方法，可以用getHandler方法，入参为httpServletRequest请求对象；//返回的HandlerExcecutionChain不仅包含了handlerMethods[即控制器的方法信息]，还包含了拦截器对象；
   - ![image-20230405141610054](spring原理mac-photos/image-20230405141610054.png)
 
 RequestMappingHandlerAdapter
 
 - 实现了HandlerAdapter接口，即处理器适配器，作用是调用控制器方法
-- ![image-20230405142611874](spring原理mac-photos/image-20230405142611874.png)
+
 - 代码示例：调用RequestMappingHandlerAdapter重要方法
+
   - invokeHandlerMethod【调用handlerMethod】是protected方法，为了调用可以自己创建一个子类，放大修饰符；测试案例：
   - 入参：请求对象、响应对象、handlerMethod对象
+
+- 如何解析控制器方法的参数、返回值等？？
+
+  - getArguementResolvers获取参数解析器；getReturnValueHandlers获取返回值解析器；
+
+- 代码示例
+
+  - ![image-20230405142611874](spring原理mac-photos/image-20230405142611874.png)
   - ![image-20231005114144965](spring原理mac.assets/image-20231005114144965.png)
   - ![image-20230405143357866](spring原理mac-photos/image-20230405143357866.png)
 
-- 如何解析控制器方法的参数、返回值等？？
-  - getArguementResolvers获取参数解析器；getReturnValueHandlers获取返回值解析器；
   - ![image-20230405150833366](spring原理mac-photos/image-20230405150833366.png)
 
 - 自定义参数解析器
-  - 步骤：自定义注解；
+  - 自定义注解；
   - 自定义resolver并实现HandlerMethodArgumentResolver接口，重写两个方法；
   - 将自定义的参数解析器，加入到RequestMappingHandlerAdapter的实现类中；
   - //后续使用的时候只需要在方法参数前添加注解即可；
   - 代码示例：
     - ![image-20230410140805276](spring原理mac-photos/image-20230410140805276.png)
-    - 加在参数位置上，运行期一直都有效；目标：标注了@Token，就会获取请求投的参数，赋值给token参数；
+    - @Target指定加在参数位置上，@Retention运行期一直都有效；目标：标注了@Token，就会获取请求投的参数，赋值给token参数；
     - ![image-20230410140819593](spring原理mac-photos/image-20230410140819593.png)
     - 校验参数是否包含@Token注解，不包含（return false）则不继续解析；
     - 解锁了注解的新一种用法，使用回调方法+ MethodParameter.getParameterAnntation(Interface.class)对带有特定注解的参数或方法做处理；
@@ -811,54 +102,75 @@ RequestMappingHandlerAdapter
 
 - 自定义返回值处理器 //依据返回值类型、方法是否加某个注解进行特殊处理
 
-  - ![image-20230410143225981](spring原理mac-photos/image-20230410143225981.png)
-  - ![image-20230410144056540](spring原理mac-photos/image-20230410144056540.png)
-  - 第三步是为了省略去spring MVC后续的视图解析等流程；
-  - ![image-20230410144140098](spring原理mac-photos/image-20230410144140098.png)
-  - ![image-20230410144452656](spring原理mac-photos/image-20230410144452656.png)
-  - 测试
+  - 自定义注解；
+  - 自定义resolver并实现HandlerMethodReturnValueHandler接口，重写两个方法；
+  - 将自定义的参数解析器，加入到RequestMappingHandlerAdapter的实现类中；
+  - //后续使用的时候只需要在方法上添加注解即可；
+  - 示例代码
+    - ![image-20230410143225981](spring原理mac-photos/image-20230410143225981.png)
+    - 第三步是为了省略去spring MVC后续的视图解析等流程
+    - ![image-20230410144056540](spring原理mac-photos/image-20230410144056540.png)
+    - ![image-20230410144140098](spring原理mac-photos/image-20230410144140098.png)
+    - ![image-20230410144452656](spring原理mac-photos/image-20230410144452656.png)
+
 
 
 ### 第二十一讲  参数解析器
 
-#### 常见的参数解析器
+**常见的参数解析器**
 
-- ![image-20230418201704758](spring原理mac-photos/image-20230418201704758.png)
+- handlerAdapter自带的参数解析器：
+  - ![image-20230418201704758](spring原理mac-photos/image-20230418201704758.png)
 
-- 没加解析参数默认@RequestParam或者@ModelAttribute
-- ![image-20230412211924689](spring原理mac-photos/image-20230412211924689.png)
-- 控制器方法封装为HadnlerMethod，然后才能完成 访问路径映射；对象绑定与类型转换，入请求的String转换互为contrller的int入参；
-- getMethodParameters可以获取所有的形参，但是参数名还是Null，initParameterNameDiscovery才能解析参数名，
-- getParameterAnnotations获取参数上的所有注解名，但是真正解析注解，获取实参需要RequestParamMethodArgumentResolver.resolveArgument；
-- ![image-20230412214805728](spring原理mac-photos/image-20230412214805728.png)
-- ![image-20230418195126689](spring原理mac-photos/image-20230418195126689.png)
+- 测试代码准备：测试器类中方法带有不同的注解：
+  - @RequestParam+String   name1=张三；
+  - 没加解析参数:特殊类型；默认@RequestParam【基础类型】; @ModelAttribute【自定义类型】
+  - @RequestParam+类型转换；
+  - @RequestParam+从环境变量获取默认值
+  - @RequestParam   上传文件
+  - @PathVariable   // test/{id}
+  - @RequestHeader  //解析请求头数据
+  - @CookieValue
+  - @Value   获取Spring中数据
+  - ///特殊类型  //包括request response session等；
+  - @ModelAttribute  自定义类型；
+    - @Request  请求体获取数据；
 
-#### 逐个解析器调试@RequestParam
+  - ![image-20230412211924689](spring原理mac-photos/image-20230412211924689.png)
 
-- 模拟请求类定义
-- getMethodParameters可以获取所有的形参，但是参数名还是Null，initParameterNameDiscovery才能解析参数名，
-- getParameterAnnotations获取参数上的所有注解名，但是真正解析注解，获取实参需要RequestParamMethodArgumentResolver.resolveArgument；
-- new RequestParamMethodArguementResolver: beanFactory[用于支持${}解析等]  是否能省略@RequestParam注解 
-- resolver.resolveArgument入参：参数；modelAndView容器 暂存中间model结果，spring封装后的请求request，bindFactory[用于类型转换]
-- 解析${}需要beanFactory 读取环境变量、控制文件；
+- 示例代码：测试代码框架+打印所有的方法入参【包括注解、类型、参数名等信息】
+  - 前面提到过HandlerMapping会将控制器方法封装为HadnlerMethod，然后才能完成 访问路径映射；对象绑定与类型转换，入请求的String转换互为contrller的int入参；
+  - initParameterNameDiscovery是为了解析方法入参的参数名；
+  - getParameterAnnotations获取参数上的所有注解名；
+  - ![image-20230412214805728](spring原理mac-photos/image-20230412214805728.png)
+  - ![image-20230418195126689](spring原理mac-photos/image-20230418195126689.png)
 
+
+**逐个解析器调试@RequestParam 相关---RequestParamMethodArgumentResolver**
+
+- 情况1：RequestParamMethodArguementResolver即可；情况2    RequestParamMethodArguementResolver的第二个参数要为true；情况3：因为有类型转换需要指定类型转换器：  ；情况4：因为要解析${}，RequestParamMethodArguementResolver的第一个参数要指定beanFactory用于读取环境变量、控制文件；情况5：RequestParamMethodArguementResolver 即可；
+- new RequestParamMethodArguementResolver（）入参: beanFactory[用于支持${}解析等]  是否能省略@RequestParam注解 
+- resolver.resolveArgument入参：参数；modelAndView容器 暂存中间model结果；spring封装后的请求对象ServletWebRequest， bindFactory[用于类型转换]  09:50
+- 当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被尝试用RequestParamMethodArguementResolver解析，会报错；
 - ![image-20230412220715273](spring原理mac-photos/image-20230412220715273.png)
 - ![image-20230412220804261](spring原理mac-photos/image-20230412220804261.png)
 - ![image-20230418194938944](spring原理mac-photos/image-20230418194938944.png)
 - ![image-20230418194755181](spring原理mac-photos/image-20230418194755181.png)
 - ![image-20230412222214873](spring原理mac-photos/image-20230412222214873.png)
-- 当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被尝试解析；
 
 #### 组合模式
 
 - 需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；//==组合器的设计模式==
-- ![image-20230418201104224](spring原理mac-photos/image-20230418201104224.png)
-- 解析@PathVariable注解之前，需要handlerMapping将{id}和实参对应起来
-- ![image-20230418203043026](spring原理mac-photos/image-20230418203043026.png)
-- ![image-20230418203126803](spring原理mac-photos/image-20230418203126803.png)
-- @RequestHeader @CookieValue @Value HttpServletRequest ，依次对应如下：
-- ![image-20230418204112667](spring原理mac-photos/image-20230418204112667.png)
-- ${}是环境参数，#{}是spring的EL表达式；
+- ![image-20231005173344787](spring原理mac19.assets/image-20231005173344787.png)
+- 解析@PathVariable注解之前，需要将请求路径的{id}和实参对应起来，结果放入request作用域[key是固定的]；//[spring中由handlerMapping完成]
+  - ![image-20230418203043026](spring原理mac-photos/image-20230418203043026.png)
+
+- 情况6-9：@RequestHeader @CookieValue @Value  特殊类型HttpServletRequest ，依次对应如下：
+  - ${}是环境参数，#{}是spring的EL表达式；
+  - ![image-20231005173003727](spring原理mac19.assets/image-20231005173003727.png)
+  - ServletRequestMethodArgumentResolver支持的其它特殊类型
+  - ![image-20231005173124144](spring原理mac19.assets/image-20231005173124144.png)
+
 
 10-12
 
