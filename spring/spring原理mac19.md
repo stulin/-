@@ -1,3 +1,7 @@
+==找个时间把课程的主线梳理下，然后梳理一般面试用 或者说 知识点框架 的极简思维导图，如RequestMappingHandlerAdapter包含了参数解析器，引出了二十一讲有哪些参数解析器及底层原理；==
+
+
+
 ==解锁了注解的新一种用法，使用回调方法+ MethodParameter.getParameterAnntation(Interface.class)对带有特定注解的参数或方法做处理；==
 
 
@@ -120,10 +124,10 @@ RequestMappingHandlerAdapter
 **常见的参数解析器**
 
 - handlerAdapter自带的参数解析器：
-  - ![image-20230418201704758](spring原理mac-photos/image-20230418201704758.png)
 
 - 测试代码准备：测试器类中方法带有不同的注解：
-  - @RequestParam+String   name1=张三；
+  
+- @RequestParam+String   name1=张三；
   - 没加解析参数:特殊类型；默认@RequestParam【基础类型】; @ModelAttribute【自定义类型】
   - @RequestParam+类型转换；
   - @RequestParam+从环境变量获取默认值
@@ -134,10 +138,14 @@ RequestMappingHandlerAdapter
   - @Value   获取Spring中数据
   - ///特殊类型  //包括request response session等；
   - @ModelAttribute  自定义类型；
-    - @Request  请求体获取数据；
-
+    - @Request  请求体获取数据
+  
+- 示例代码
+  
+- ![image-20230418201704758](spring原理mac-photos/image-20230418201704758.png)
+  
   - ![image-20230412211924689](spring原理mac-photos/image-20230412211924689.png)
-
+  
 - 示例代码：测试代码框架+打印所有的方法入参【包括注解、类型、参数名等信息】
   - 前面提到过HandlerMapping会将控制器方法封装为HadnlerMethod，然后才能完成 访问路径映射；对象绑定与类型转换，入请求的String转换互为contrller的int入参；
   - initParameterNameDiscovery是为了解析方法入参的参数名；
@@ -145,46 +153,49 @@ RequestMappingHandlerAdapter
   - ![image-20230412214805728](spring原理mac-photos/image-20230412214805728.png)
   - ![image-20230418195126689](spring原理mac-photos/image-20230418195126689.png)
 
-
 **逐个解析器调试@RequestParam 相关---RequestParamMethodArgumentResolver**
 
+- 参数解析器核心两个方法
+  - supportsParameter判断时否支持某种参数；
+  - resolver.resolveArgument  真正解析参数得到实参；
+- 组合模式
+  - 需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；//==组合器的设计模式==
+  - ![image-20231005173344787](spring原理mac19.assets/image-20231005173344787.png)
 - 情况1：RequestParamMethodArguementResolver即可；情况2    RequestParamMethodArguementResolver的第二个参数要为true；情况3：因为有类型转换需要指定类型转换器：  ；情况4：因为要解析${}，RequestParamMethodArguementResolver的第一个参数要指定beanFactory用于读取环境变量、控制文件；情况5：RequestParamMethodArguementResolver 即可；
-- new RequestParamMethodArguementResolver（）入参: beanFactory[用于支持${}解析等]  是否能省略@RequestParam注解 
-- resolver.resolveArgument入参：参数；modelAndView容器 暂存中间model结果；spring封装后的请求对象ServletWebRequest， bindFactory[用于类型转换]  09:50
-- 当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被尝试用RequestParamMethodArguementResolver解析，会报错；
-- ![image-20230412220715273](spring原理mac-photos/image-20230412220715273.png)
-- ![image-20230412220804261](spring原理mac-photos/image-20230412220804261.png)
-- ![image-20230418194938944](spring原理mac-photos/image-20230418194938944.png)
-- ![image-20230418194755181](spring原理mac-photos/image-20230418194755181.png)
-- ![image-20230412222214873](spring原理mac-photos/image-20230412222214873.png)
+  - new RequestParamMethodArguementResolver（）入参: beanFactory[用于支持${}解析等]  是否能省略@RequestParam注解 
+  - resolver.resolveArgument入参：参数；modelAndView容器 暂存中间model结果；spring封装后的请求对象ServletWebRequest， bindFactory[用于类型转换]
+  - /////当前问题：没有@RequestParam的其它参数 如带@PathVariable也会被认为省略了@RequestParam[尝试用RequestParamMethodArguementResolver解析]，会报错；//后面会学到用组合模式+ 可省略/不可省略两个解析器可以解决；
+- 情况6-9：@RequestHeader @CookieValue @Value  特殊类型HttpServletRequest ，依次为：RequestHeaderMethodArgumentResolver、ServletCookieValueMethodArgumentResolver、ExpressionValueMethodArgumentResolver、ServletRequestMethodArgumentResolver
+  - ${}是环境变量、配置参数，#{}是spring的EL表达式；
+- 情况10-12
+  - 情况10和11@ModelAttribute，情况12@RequestBody依次对应：ServletModelAttributeMethodProcessor、RequestResponseBodyMethodProcessor
+  - 情况10和11本质上都是@ModelAttribute；
+    - 参数和javaBean的属性做一个绑定，参数解析器的结果作为模型数据存入ModelAndViewContainer[==默认modelAttribute中名字为类型名字==  ]；
+    - 注意：对应的ServletModelAttributeMethodProcessor可以指定@ModelAttribute是否可以省略，spring中会添加两个[不可省略+可以省略]；  ==可以省略@ModelAttribute @RequestParam注解的的processor一定要放在最后，不然会尝试省略@ModelAttribute方式解析@RequestBody对应的参数，认为它省略了@ModelAttribute； 多个省略要先省略省略@ModelAttribute，后省略@RequestParam，不会把String当做省略@ModelAttribute处理时为什么？？==
+- 示例代码：
+  - 模拟请求
+    - ![image-20230412220715273](spring原理mac-photos/image-20230412220715273.png)
+    - ![image-20230412220804261](spring原理mac-photos/image-20230412220804261.png)
+  - 主程序
+    - ![image-20230418194938944](spring原理mac-photos/image-20230418194938944.png)
+    - ![image-20230418194755181](spring原理mac-photos/image-20230418194755181.png)
+    - ![image-20230412222214873](spring原理mac-photos/image-20230412222214873.png)
 
-#### 组合模式
+  - 解析@PathVariable注解之前，需要将请求路径的{id}和实参对应起来，结果放入request作用域[key是固定的]；//[spring中由handlerMapping完成]
+    - ![image-20230418203043026](spring原理mac-photos/image-20230418203043026.png)
 
-- 需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；//==组合器的设计模式==
-- ![image-20231005173344787](spring原理mac19.assets/image-20231005173344787.png)
-- 解析@PathVariable注解之前，需要将请求路径的{id}和实参对应起来，结果放入request作用域[key是固定的]；//[spring中由handlerMapping完成]
-  - ![image-20230418203043026](spring原理mac-photos/image-20230418203043026.png)
+  - 情况6-9：@RequestHeader @CookieValue @Value  特殊类型HttpServletRequest ，依次对应如下：
+    - 示例中@Value中的值用了${},其实@RequestParam @CookieValue中指定参数名 默认值，也可以这么用
+    - ${}是环境变量、配置参数，#{}是spring的EL表达式；
+    - ![image-20231005173003727](spring原理mac19.assets/image-20231005173003727.png)
+    - 除HttpServletRequest 外，ServletRequestMethodArgumentResolver支持的其它特殊类型
+    - ![image-20231005173124144](spring原理mac19.assets/image-20231005173124144.png)
 
-- 情况6-9：@RequestHeader @CookieValue @Value  特殊类型HttpServletRequest ，依次对应如下：
-  - ${}是环境参数，#{}是spring的EL表达式；
-  - ![image-20231005173003727](spring原理mac19.assets/image-20231005173003727.png)
-  - ServletRequestMethodArgumentResolver支持的其它特殊类型
-  - ![image-20231005173124144](spring原理mac19.assets/image-20231005173124144.png)
-
-
-10-12
-
-- @ModelAttribute， 
-  - 参数和javaBean的属性做一个绑定，对应的ServletModelAttributeMethodProcessor可以指定@ModelAttribute是否可以省略，spring中会添加两个；参数解析器的结果作为模型数据存入ModelAndViewContainer[默认modelAttribute中名字为类型名字  ]；  
-  - 注意：不需要@ModelAttribute注解的的processor一定要放在最后，不然会尝试省略@ModelAttribute方式解析@RequestBody对应的参数，认为它省略了@ModelAttribute； 多个省略要先对象，后普通类型；
-- ![image-20230606105347176](spring原理mac-photos/image-20230606105347176.png)
-- @ModelAttribute，@RequestBody依次对应
-- ![image-20230425200654484](spring原理mac-photos/image-20230425200654484.png)
-- 消息转换器，把JSON数据解析为javaBean；
-- dataBinder[类型转换和数据绑定]换一个：![image-20230425195229757](spring原理mac-photos/image-20230425195229757.png)
-- ![image-20230425200601463](spring原理mac-photos/image-20230425200601463.png)
-
-//${}对应配置文件；#{}对应EL表达式；
+  - 情况10和11@ModelAttribute，情况12@RequestBody依次对应
+    - @ModelAttribute需要换一个dataBinder[类型转换和数据绑定]
+      - ![image-20230425195229757](spring原理mac-photos/image-20230425195229757.png)
+    - @RequestBody的解析器入参需要一个消息转换器，把JSON数据解析为javaBean；
+    - ![image-20230425200654484](spring原理mac-photos/image-20230425200654484.png)
 
 ### 第二十二讲  参数解析器
 
