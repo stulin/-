@@ -197,33 +197,38 @@ RequestMappingHandlerAdapter
     - @RequestBody的解析器入参需要一个消息转换器，把JSON数据解析为javaBean；
     - ![image-20230425200654484](spring原理mac-photos/image-20230425200654484.png)
 
-### 第二十二讲  参数解析器
+### 第二十二讲  获取参数名(之前用了DefaultParameterNameDiscoverer)
 
-#### 获取参数名(之前用了DefaultParameterNameDiscoverer)
+- 编译    反编译 可以发现编译默认是不保留参数名；解决方案：
 
-- 编译    反编译 可以发现编译默认是不保留参数名；可以添加-parameters[编译会生成MethodParameter，可以发射获取] ；或者-g[编译会生成LocalVariableTable，反射无法获取，但是可以ASM获取; 只能获取类的参数名，对接口不生效]  //javap -c -v .\Bean1.class
-- project structure-----Modules-----show-----dependencies，点击+号，JARs or directories，把Bean2.java所在的外层目录加进来；
-- 反射获取
+  - 可以添加-parameters[反编译会有MethodParameter，参数可以反射获取] ；
+  - 或者-g[反编译会有LocalVariableTable，参数名 反射无法获取，但是可以ASM获取;  只能获取类的参数名，==对接口不生效==]  //反编译  ： javap -c -v .\Bean1.class 
+  - spring中参数名获取结合了两种，默认是DefaultParameterNameDiscoverer
+
+- idea添加src外的源文件：project structure-----Modules-----show-----dependencies，点击+号，JARs or directories，把Bean2.java所在的外层目录加进来；//src目录下idea会自动编译，添加额外参数
+
+- 参数名获取：反射获取，LocaLVariableTableParameterNameDiscoverer（底层是asm解析LocalVariableTable）获取
+  
   - ![image-20230607230342537](spring原理mac-photos/image-20230607230342537.png)
-- ASM获取，借助工具，底层用的asm；
-
-- spring中结合了两种，勇大 是DefaultParameterNameDiscoverer
+  
   - ![image-20230607230037504](spring原理mac-photos/image-20230607230037504.png)
 
 ### 第二十三讲  对象绑定与类型转换
 
-- 底层第一套转换接口与实现
-  - ![image-20230607230921675](spring原理mac-photos/image-20230607230921675.png)
-- 底层第二套转换接口  //jdk自带
+**绑定接口、实现及使用示例**
+
+- 底层第一套转换接口与实现[源自spring]，FormattingConversionService是一个实现类；
+  - ![image-20231014151627756](spring原理mac19-photos/image-20231014151627756.png)
+- 底层第二套转换接口，可以与第一套接口适配（或者说转换）  //jdk自带
   - ![image-20230607231119585](spring原理mac-photos/image-20230607231119585.png)
 - 高层接口实现
   - ![image-20230608001924728](spring原理mac-photos/image-20230608001924728.png)
-  - 转换器查找顺序
+  - 转换器查找顺序：优先级最高的是PropertyEditorRegistry 中自定义的转换器；
     - ![image-20230608001940383](spring原理mac-photos/image-20230608001940383.png)
-  - 几个接口的附加功能
+  - 常见的几个转换器
     - ![image-20230608002014695](spring原理mac-photos/image-20230608002014695.png)
-    - spring反射插件bean，不知道有哪些属性，需要批量属性赋值；Property走反射的set get；Field 走反射的成员变量赋值；
-    - 绑定配置文件属性和Bean属性，directFieldAccess为真则走Field；
+    - ////spring反射插件bean，不知道有哪些属性，需要批量属性赋值；Property走反射的set get；Field 走反射的成员变量赋值；
+    - ServletRequestDataBinder绑定配置文件属性和Bean属性，directFieldAccess为真则走Field；
   - 四个实现的基本用法
     - ![image-20230608124859458](spring原理mac-photos/image-20230608124859458.png)
     - bean属性赋值，类型不匹配会自动转换；
@@ -233,25 +238,26 @@ RequestMappingHandlerAdapter
     - web环境下推荐的binder和propertyValues
     - ![image-20230608125546669](spring原理mac-photos/image-20230608125546669.png)
 - 绑定工厂
-  - 不合格式的日期等需要自定义转换器；
-  - new ServletRequestDataBinderFactory入参：要新增的自定义的方法、???
-  - createBinder入参：封装的request请求、目标对象、对象名[随便起]
-  - @initBinder标注方法  入参：WebDataBinder；  factory.createBinder方法调用时，会回调@InitBinder方法，可以在回调中把自定义的formatter方法添加倒WebDataBinder中；
+  - 场景：日期格式 不支持的情况； 设置 属性.属性
+    - 不合格式的日期等需要自定义转换器：ConversionService配合Formatter ；自定义PropertyEditor
+  - 代码示例：使用dataBinder工厂，ServletRequestDataBinderFactory
+    - new ServletRequestDataBinderFactory入参：要新增的自定义的方法List[可以为null]、初始化器[可以为null]
+    - createBinder入参：封装的request请求、目标对象、对象名[随便起]
+  - @initBinder扩展类型转换器：[对factory设置回调的方法知乎] factory.createBinder方法调用时，会回调@InitBinder方法，可以在回调中把自定义的formatter方法添加倒WebDataBinder中；底层用的是PropertyEditorRegistry   PropertyEditor
     - 无自定义转换
       - ![image-20230611220516701](spring原理mac-photos/image-20230611220516701.png)
-    - @InitBinder注解实现自定义转换，底层用的是PropertyEditorRegistry   PropertyEditor
+    - @InitBinder注解扩展类型转换器，
       - ![image-20230611220729862](spring原理mac-photos/image-20230611220729862.png)
     - ![image-20230611112332517](spring原理mac-photos/image-20230611112332517.png)
-    - 用ConversionService+formatter 添加自定义转换方法，需要封装为Intializer；
+    - 用ConversionService.addformatter 添加自定义转换方法，需要封装为ConfigurableWebBindingInitializer；
       - ![image-20230611222627050](spring原理mac-photos/image-20230611222627050.png)
     - 两种都有，@InitBinder优先级更高
       - ![image-20230611223736631](spring原理mac-photos/image-20230611223736631.png)
-    - 默认的ConversionService配合@DateTimeFormat指定日期格式；  DefaultFormattingConversionService或ApplicationConversionService；
+  - 默认的ConversionService[其实内置了对特殊日期格式的解析，会针对注解自己添加转换器]配合@DateTimeFormat指定日期格式；  DefaultFormattingConversionService或ApplicationConversionService[springBoot中]；
       - ![image-20230611224506730](spring原理mac-photos/image-20230611224506730.png)
-
-- 绑定工厂
-  - getGenericSuperclass获取有泛型信息的父类；有泛型信息 类型是ParameterizedType；
-  - resolveTypeArgument入参：子类类型、父类类型
+- spring获取泛型参数
+  - jdk获取：getGenericSuperclass获取有泛型信息的父类；有泛型信息 类型是ParameterizedType；getActualTypeArguments获取泛型参数(可以有多个)；
+  - spring获取：resolveTypeArguments入参：子类类型、父类类型（也可以有多个，单个去掉s）
   - 获取父类泛型参数的两种方法
     - ![image-20230611225345879](spring原理mac-photos/image-20230611225345879.png)
 
