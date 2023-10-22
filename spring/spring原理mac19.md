@@ -263,34 +263,34 @@ RequestMappingHandlerAdapter
 
 
 
-### 第24讲 ControllerAdvice
+### 第二十四讲 ControllerAdvice
 
-- @InitBinder【添加自定义类型不定期】  @ExceptionHandler  @ModelAttribute
+- ControllerAdvice功能增强：@InitBinder【添加自定义类型类型转换器】  @ExceptionHandler【异常处理】  @ModelAttribute【返回值添加到 ModelAndView中】
 - @InitBinder  用于扩展类型转换器
   - @Controller【只对单个controller生效】、@ControllerAdvice中【全局，对所有控制器生效】
   -  getDataBinderFactory被调用的时候会解析contorller1的 @InitBinder
   - ![image-20230615210510198](spring原理mac-photos/image-20230615210510198.png)
   - ![image-20230615210534354](spring原理mac-photos/image-20230615210534354.png)
 
-### 第25讲 控制器方法执行流程
+### 第二十五讲 控制器方法执行流程
 
 - ![image-20230618100545004](spring原理mac-photos/image-20230618100545004.png)
-- 图2 和 图3是连在一起的；先是图2这边的 准备工作：准备 数据绑定工厂、模型工厂，中间的临时数据保存倒ModelAndViewContainer；然后是图3：ServletInvocableHandlerMethod 完成调用：参数解析、反射调用方法、返回值解析、最后从ModelAndViewContainer中获取最终结果
+- 【图2 和 图3是连在一起的；先是==RequestMappingHandlerAdapter(图2)== 这边的 准备工作：准备 数据绑定工厂、模型工厂，中间的临时数据保存到ModelAndViewContainer；然后是图3：】     ==核心是  ServletInvocableHandlerMethod 完成调用：参数解析（包括 数据绑定&&类型转换；参数名解析；参数解析等）、反射调用方法、返回值解析、最后从ModelAndViewContainer中获取最终结果==
   - ![image-20230618101521892](spring原理mac-photos/image-20230618101521892.png)
   - ![image-20230618102238378](spring原理mac-photos/image-20230618102238378.png)
-  - 参数名解析器、参数解析器、设置数据绑定工厂、加了@RespaonseStataus(HttpStatus.OK)，可以暂时不考虑返回值处理器；     handlerMethod.incokeAndHandle入参：http请求对象、MVCContainer
+  - ServletInvocableHandlerMethod 设置内容：参数名解析器、参数解析器、数据绑定工厂、[加了@ResponseStataus(HttpStatus.OK)，可以暂时不设置返回值处理器]；     handlerMethod.invokeAndHandle入参：http请求对象、MVCContainer
   - ![image-20230618105410210](spring原理mac-photos/image-20230618105410210.png)
   - ![image-20230618105422817](spring原理mac-photos/image-20230618105422817.png)
 
 ### 第26讲 ControllerAdvice之@ModelAttribute
 
-- 加在参数名上  流程：参数解析器[ServletModelAttributeMethodProcessor]调用对象构造方法，用数据绑定工厂 绑定空对象和参数，结果放入MVCContainer；
-- 加在方法名上  流程：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]调用标注了@ModelAttribute方法，并把返回值放入MVCContainer；
+- 第一种用法：加在参数名上  流程：参数解析器[ServletModelAttributeMethodProcessor]   
+  - 参数解析器的解析流程：调用对象构造方法，用数据绑定工厂 绑定空对象和参数，最终的对象放入MVCContainer[默认名称，对象类型首字母小写]；
+- 第二种用法：加在方法名上()  流程：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]调用标注了@ModelAttribute方法，并把返回值放入MVCContainer；
   - afterProperties会找到controller中所有带@ModelAtribute注解的方法，并记录；  
   - ==我没想到的是用的handlerMethod对象，绑定的是foo方法，却不影响modelFactory的初始化和反射调用，看来getModelFactory.invoke的反射 真的是只执行了 带@ModelAtribute注解的方法 自动调用，所以只用到了类信息把；modelFactory的initModel( )方法可以为MVCContainer补充模型数据；==
   - ![image-20230618113052400](spring原理mac-photos/image-20230618113052400.png)
   - ![image-20230618113629547](spring原理mac-photos/image-20230618113629547.png)
-
 - 加在controller中方法上 流程：单个控制器中方法调用时都会补充mvc数据；  而ControllerAdvice中方法上则对应所有的的controller中方法；
 
 ### 第27讲 返回值处理器
