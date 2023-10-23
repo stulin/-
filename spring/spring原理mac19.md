@@ -282,36 +282,52 @@ RequestMappingHandlerAdapter
   - ![image-20230618105410210](spring原理mac-photos/image-20230618105410210.png)
   - ![image-20230618105422817](spring原理mac-photos/image-20230618105422817.png)
 
-### 第26讲 ControllerAdvice之@ModelAttribute
+### 第26讲 ControllerAdvice之@ModelAttribute底层原理
 
-- 第一种用法：加在参数名上  流程：参数解析器[ServletModelAttributeMethodProcessor]   
+- 第一种用法：加在参数名上  流程：参数解析器[ServletModelAttributeMethodProcessor]   //RequestMappingHandlerAdapter内部就包含了参数解析器；
   - 参数解析器的解析流程：调用对象构造方法，用数据绑定工厂 绑定空对象和参数，最终的对象放入MVCContainer[默认名称，对象类型首字母小写]；
-- 第二种用法：加在方法名上()  流程：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]调用标注了@ModelAttribute方法，并把返回值放入MVCContainer；
-  - afterProperties会找到controller中所有带@ModelAtribute注解的方法，并记录；  
-  - ==我没想到的是用的handlerMethod对象，绑定的是foo方法，却不影响modelFactory的初始化和反射调用，看来getModelFactory.invoke的反射 真的是只执行了 带@ModelAtribute注解的方法 自动调用，所以只用到了类信息把；modelFactory的initModel( )方法可以为MVCContainer补充模型数据；==
+- 第二种用法：加在controller的某个方法名上[只对单个controller生效，而不是单个方法！！！！]：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]在标注了@ModelAttribute方法被调用后，会把返回值放入MVCContainer(默认名字为方法返回值类型首字母小写)； //扩展：加在@ControllerAdvice标注的类的方法上则对所有的方法生效； 
+  - 流程梳理：首先自定义==RequestMappingHandlerAdapter==，其中的==afterPropertiesSet()==方法会自动找到所有标注@ModelAttribute的方法并记录； 正常定义并设置ServletInvocableHandlerMethod（执行真正的控制器调用）；==最后依据adapter反射（入参： handlerMehtod factory(对象绑定工厂)） 获取modelFactory并初始化==； 后面调用控制器方法后返回结果就会被自动添加到Containder中了；
+  - ![image-20231022145018072](spring原理mac19.assets/image-20231022145018072.png)
   - ![image-20230618113052400](spring原理mac-photos/image-20230618113052400.png)
   - ![image-20230618113629547](spring原理mac-photos/image-20230618113629547.png)
-- 加在controller中方法上 流程：单个控制器中方法调用时都会补充mvc数据；  而ControllerAdvice中方法上则对应所有的的controller中方法；
 
-### 第27讲 返回值处理器
+### 第27讲 返回值处理器底层原理
 
-- 准备返回值处理器；渲染：这里结合freeMarker：renderView()方法是自己写好的渲染方法；
+- 返回值大致有七种类型，不同的类型对应着不同的处理器 最后用一个组合模式串起来即可；
+
+  - 7种返回值类型：ModelAndView、String[代表视图的名字]、@ModelAttribute+@RequestMapping[默认试图会取路径]+自定义类型、自定义类型[省略@ModelAttribute]     不走视图渲染的三个方法:【RequestHandler为true】： HttpEntity<T>   【状态码  响应头  响应体】HttpHeaders【只有响应头】   @ResponseBody【只有响应体】
+
   - ![image-20230618123336599](spring原理mac-photos/image-20230618123336599.png)
   - ![image-20230618123500334](spring原理mac-photos/image-20230618123500334.png)
-- 7种返回值类型：ModelAndView、String[代表视图的名字]、@ModelAttribute+@RequestMapping[默认试图会取路径]+自定义类型、自定义类型[省略@ModelAttribute]     不走视图渲染的三个方法:【RequestHandler为true】： HttpEntity<T>   HttpHeaders   @ResponseBody
-- ModelAndView  //modelAndView也没有定义试图名称啊？？？？ModelAndView种指定试图名了
+
+- 返回值处理器的结果是ModelAndView对象，需要试图渲染；这里的示例代码用了freeMarker：renderView()方法是自己写好的渲染方法【给 视图名字 拼接上前缀、后缀，然后去找视图渲染模板  MVCContainer填充模板】；
+
+- 七种返回类型示例：
+
+- 核心就是两个方法：supportsReturnType[是否支持 输入的  返回值类型]；handlerReturnValue[进行对应的处理，入参：returnValue  returnType container{MVC容器}  请求对象]
+
+- ModelAndView  //handlerReturnValue会把模型和视图添加到MVCContainer，然后视图渲染
   - ![image-20230618125215217](spring原理mac-photos/image-20230618125215217.png)
-- String和ModelAndView类似  方法名改为method2即可；
-- ModelAttribute+@RequestMapping[默认试图会取路径]+自定义类型
-  - @RequestMapping[默认试图会取路径]原理：路径解析结果存到request作用域[resolveAndCacheLookupPath]，后续会生成默认的视图名；
-  - 没加@RequestMapping注解的话需要自己设置路径到request作用域
+
+- String和ModelAndView类似  【少了添加MVC到容器】方法名改为method2即可；
+
+- @ModelAttribute+自定义类型+@RequestMapping[默认视图会取路径]
+  - handlerReturnValue会把模型添加到MVCContainer，视图名则从请求路径获取
+    - @RequestMapping[默认视图获取]原理：路径解析结果存到request作用域[调用resolveAndCacheLookupPath]，后续视图解析发现没有视图名则取该路径作为默认的视图名；
   - ![image-20230619234244698](spring原理mac-photos/image-20230619234244698.png)
-- HttpEntity<T>  可控制 状态码  响应头  响应体；响应体有值
+
+- 省略了@ModelAttribute，和上一种情况一样；
+
+- 下面三种方法：不需要渲染，原理是对应的handlerReturnValue中会把setRequestHandler(true)；
+
+- HttpEntity<T>   包括：状态码  响应头  响应体；//示例中  handlerReturnValue： 用MessaeConverer把响应体的内容转换成json数据；还可以自己设置状态码、响应头等；
   - ![image-20230620000522201](spring原理mac-photos/image-20230620000522201.png)
-- HttpHeaders：和HttpEntity<T>类似，不同 的是响应头有值
-  - ![image-20230620000928682](spring原理mac-photos/image-20230620000928682.png)
-- @ResponseBody  和HttpEntity<T>类似，有值的也是响应体，会自动生成部分响应头[有默认值]
-  - ![image-20230620000928682](file://C:/Users/lrh/Desktop/code202211/js/summaryAndStudyPlan/spring/spring%E5%8E%9F%E7%90%86mac-photos/image-20230620000928682.png?lastModify=1687191151)
+
+- HttpHeaders：和HttpEntity<T>类似，不同 的是只有响应头有值
+  - ![image-20230620000928682](spring原理mac-photos/)
+
+- @ResponseBody  和HttpEntity<T>类似，handlerReturnValue： 用MessaeConverer把响应体的内容转换成json数据；//会自动生成部分响应头[有默认值Content-Type-application/json]
 
 - 被解析返回结果的方法：
   - ![image-20230619234802077](spring原理mac-photos/image-20230619234802077.png)
@@ -330,19 +346,20 @@ RequestMappingHandlerAdapter
 
 ### 第28讲 MessageConverter
 
-- 信息转换器：入参处理器解析requsetBody转换为JSON串、返回值处理器等；
+- 消息转换器应用场景：@requsetBody对应的入参处理器解析转换为JSON串、@ResponseBody对应的返回值处理器等；
+
+- 常见的消息转换器：对象转json(jackson2格式)【canWrite  write】  对象转xml(jackson2实现)【canWrite write】 json转对象（jackson2实现）【canRead  read】
+
+- 消息转换器的执行顺序：多个转换器的执行顺序，1.看响应中的ContentType(通常可以直接看contreller的@RequestMapping是否指定)若;2.看请求中的Accept是否指定；3.默认messageConverter  List的顺序；
 
 - 消息  javaBean转换示例：
 
-  - ![image-20230622200950643](spring原理mac.assets/image-20230622200950643.png)
+  - ![image-20230622201224770](spring原理mac19.assets/image-20230622201224770.png)
+- ![image-20230622201212626](spring原理mac.assets/image-20230622201212626.png)
+  - ![image-20230622200950643](spring原理mac19.assets/image-20230622200950643.png)
 
-  - ![image-20230622201212626](spring原理mac.assets/image-20230622201212626.png)
-
-  - ![image-20230622201224770](spring原理mac.assets/image-20230622201224770.png)
-
-- 多个转换器的执行顺序，若指定请求的response的ContentType/request的Accept头，则以ContentType/Accept头为准；默认List顺序；
   - ![image-20230622202136887](spring原理mac.assets/image-20230622202136887.png)
-  - ![image-20230622202210618](spring原理mac.assets/image-20230622202210618.png)
+- ![image-20230622202210618](spring原理mac.assets/image-20230622202210618.png)
 
 ### 第29讲 ControllerAdice之ResponseBodyAdvice
 
