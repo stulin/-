@@ -363,12 +363,15 @@ RequestMappingHandlerAdapter
 
 ### 第29讲 ControllerAdice之ResponseBodyAdvice
 
-- 对请求体、响应体的增强，例：Result类直接返回，不是则可以自动包装为Result；
+- 用处：对请求体、响应体的增强，
+  - 例：Result类直接返回，不是则可以自动包装为Result；
+- 用法：@ControllerAdvice标注类 实现ResponseBodyAdice<Object>接口同时重写supprts  beforeBodyWrite方法【supprts方法return true的情况下才会调用beforeBodyWrite方法】
 - BeforeBodyWrite入参：响应结果、返回值的相关信息如方法名  注解等、contentType、converter等；
-- AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算
+- ////AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestCOntroller同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该返回结果对应方法的类
 - ![image-20230623152102107](spring原理mac.assets/image-20230623152102107.png)
 - ![image-20230623152219896](spring原理mac.assets/image-20230623152219896.png)
 - ![image-20230623152143191](spring原理mac.assets/image-20230623152143191.png)
+- ![image-20231025123138294](spring原理mac19-photos/image-20231025123138294.png)
 
 ### 第30讲 异常处理
 
