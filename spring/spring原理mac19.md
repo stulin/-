@@ -366,7 +366,7 @@ RequestMappingHandlerAdapter
 - 用处：对请求体、响应体的增强，
   - 例：Result类直接返回，不是则可以自动包装为Result；
 - 用法：@ControllerAdvice标注类 实现ResponseBodyAdice<Object>接口同时重写supprts  beforeBodyWrite方法【supprts方法return true的情况下才会调用beforeBodyWrite方法】
-- BeforeBodyWrite入参：响应结果、返回值的相关信息如方法名  注解等、contentType、converter等；
+- ////BeforeBodyWrite入参：响应结果、返回值的相关信息如方法名  注解等、contentType、converter等；
 - ////AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestCOntroller同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该返回结果对应方法的类
 - ![image-20230623152102107](spring原理mac.assets/image-20230623152102107.png)
 - ![image-20230623152219896](spring原理mac.assets/image-20230623152219896.png)
@@ -376,8 +376,11 @@ RequestMappingHandlerAdapter
 ### 第30讲 异常处理
 
 - 之前不是好奇，@Exception注解后，未处理的异常是如何返回给前端的？这一节其实就是讲解这个过程
-- dispatcherServlet的doDispatch方法：handlerAdaptor、handle()，如果有异常 会先记录，后续调用processDispatchResult；
-- ![image-20230623153458512](spring原理mac.assets/image-20230623153458512.png)
+- 异常处理注解如何使用？注解背后的逻辑，调用哪个类哪个方法？
+- 异常处理调用哪个类哪个方法：dispatcherServlet的doDispatch方法：【获取handlerAdaptor对象、调用handle()，】如果有异常 会先记录，后续调用processDispatchResult，有异常的话会进一步调用processHandlerException【会调用异常处理器处理异常，常用的异常处理器的实现 ExceptionHandlerExceptionResolver解析@ExceptionHandler】；
+  - ![image-20231026170516205](spring原理mac19-photos/image-20231026170516205.png)
+  - ![image-20230623153458512](spring原理mac.assets/image-20230623153458512.png)
+- @ExceptionHandler用法：
 - ExceptionHandlerExceptionResolver:处理带有@Exception；resolver.afterPropertiesSet()会自动设置一些默认的参数解析器、返回值处理器；
 - 示例：
   - ![image-20230623154842405](spring原理mac.assets/image-20230623154842405.png)
