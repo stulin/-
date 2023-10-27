@@ -380,41 +380,40 @@ RequestMappingHandlerAdapter
 - 异常处理调用哪个类哪个方法：dispatcherServlet的doDispatch方法：【获取handlerAdaptor对象、调用handle()，】如果有异常 会先记录，后续调用processDispatchResult，有异常的话会进一步调用processHandlerException【会调用异常处理器处理异常，常用的异常处理器的实现 ExceptionHandlerExceptionResolver解析@ExceptionHandler】；
   - ![image-20231026170516205](spring原理mac19-photos/image-20231026170516205.png)
   - ![image-20230623153458512](spring原理mac.assets/image-20230623153458512.png)
-- @ExceptionHandler用法：
-- ExceptionHandlerExceptionResolver:处理带有@Exception；resolver.afterPropertiesSet()会自动设置一些默认的参数解析器、返回值处理器；
-- 示例：
-  - ![image-20230623154842405](spring原理mac.assets/image-20230623154842405.png)
-  - ![image-20230623160015680](spring原理mac.assets/image-20230623160015680.png)
-  - ![image-20230623160441568](spring原理mac.assets/image-20230623160441568.png)
-  - 嵌套异常信息也能取出；
-  - ![image-20230623162806749](spring原理mac.assets/image-20230623162806749.png)
-  - ![image-20230623162745418](spring原理mac.assets/image-20230623162745418.png)
-  - 例：获取入参
-    - ![image-20230623163447886](spring原理mac.assets/image-20230623163447886.png)
-    - ![image-20230623163517679](spring原理mac.assets/image-20230623163517679.png)
+- @ExceptionHandler  + 手工调用 ExceptionHandlerExceptionResolver用法：
+  - ExceptionHandlerExceptionResolver:设置消息消息转换器；调用resolver.afterPropertiesSet()会自动设置一些默认的参数解析器、返回值处理器；最后就可以调用resolveException()处理异常【该方法会查看 抛异常方法队以ing的类中是否有@ExceptionHandler及相关注解的方法，有的话看注解的异常处理范围与当前捕获的异常是否匹配，匹配则反射调用@ExceptionHandler及相关注解标注的方法{这里就是handle}】
+- 示例：@ExceptionHandler返回值为@ResponseBody 、ModelAndView 、嵌套异常信息 会被逐层展开变成一个数组，保证被嵌套的异常也能被处理、异常处理方法可以有HttpServletRequest等特殊入参
+  - ![image-20231027095858507](spring原理mac19-photos/image-20231027095858507.png)
+  - ![image-20231027100007316](spring原理mac19-photos/image-20231027100007316.png)
+    - ![image-20231027100044110](spring原理mac19-photos/image-20231027100044110.png)
+  - ![image-20231027101816616](spring原理mac19-photos/image-20231027101816616.png)
+    - ![image-20231027101657311](spring原理mac19-photos/image-20231027101657311.png)
+  - ![image-20231027102150273](spring原理mac19-photos/image-20231027102150273.png)
 
-### 第31讲：ControllerAdvice之@ExceptionHandler
+### 第31讲：@ControllerAdvice之@ExceptionHandler
 
--  全局异常处理，@ControllerAdvice注解类+@ExceptionHandler注解方法，异常会由方法处理
-- 会先找抛异常方法上是否有@Exception注解，如果没有的话，会找@ControllerAdvice注解类+@ExceptionHandler注解方法，异常会由方法处理
+-  全局异常处理（覆盖所有的Controller），@ControllerAdvice注解类+@ExceptionHandler注解方法，匹配的未处理异常会由该方法处理
+   - 出现未处理的异常时：会先找抛异常方法上是否有@Exception注解，如果没有的话，会找@ControllerAdvice注解类+@ExceptionHandler注解方法，异常会由方法处理
 - 底层实现原理：
-  - 初始化的afterPropies方法中会调用initExceptionHandlerAdiceCache()，该方法会 查找context中所有的ControllerAdviceBean，并便利找到其中包含exceptionhandler注解的方法，加入cahce，方便后续从cahce中取异常处理方法并调用；
-
+  - 容器中的ExceptionHandlerExceptionResolver初始化方法afterPropies方法中会调用initExceptionHandlerAdiceCache()，该方法会 查找context中所有的@ControllerAdvice标注的Bean，并便利找到其中包含exceptionhandler注解的方法，加入cahce，方便后续从cahce中取异常处理方法并调用；//RequestMappingHandlerAdapter的初始化方法也有类似的操作；
+- 容器中实现了InitializingBean接口【ExceptionHandlerExceptionResolver实现了该接口】的方法都会自动回调afterPropertiesSet;
+- 示例代码：spring容器中获取ExceptionHandlerExceptionResolver；
 - ![image-20230623165828547](spring原理mac.assets/image-20230623165828547.png)
-- @Bean注解的方法都会自动回调initializeBean
 - ![image-20230623165845605](spring原理mac.assets/image-20230623165845605.png)
+- ![image-20231027142001189](spring原理mac19-photos/image-20231027142001189.png)
 
 ### 第32讲 tomcat的异常处理
 
 - 控制器的异常可以被ControllerAdvice处理，但是如filter中的异常不会被处理，需要更上层的异常处理者；其实tomcat是自带默认的异常处理器的，会自动返回异常的起因等等；
 - tomcat自定义异常处理地址
-  - 定义：errorPageRegistrart添加tomcat出错了默认的错误页面地址，可以是静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]用于 回调errorPageRegistrar
+  - 定义：errorPageRegistrar 添加tomcat出错时默认的错误页面地址，可以是静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]用于 回调errorPageRegistrar
   - 其实 方法的入参/最后返回的ErrorPageRegistrar 就是TomcatServletWebServerFactory[是ErrorPageRegistrar的子类]
+  - ![image-20231027151151026](spring原理mac19-photos/image-20231027151151026.png)
   - ![image-20230625234214224](spring原理mac-photos/image-20230625234214224.png)
   - tomcat捕获到spring框架外的异常会保存到Request域中；
   - ![image-20230625234424452](spring原理mac-photos/image-20230625234424452.png)
-  - ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
-
+- ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
+  
 - BasicErrorController
   - 支持不同的响应格式[json格式  html格式]
     - ![image-20230625235542579](spring原理mac-photos/image-20230625235542579.png)
