@@ -405,21 +405,29 @@ RequestMappingHandlerAdapter
 ### 第32讲 tomcat的异常处理
 
 - 控制器的异常可以被ControllerAdvice处理，但是如filter中的异常不会被处理，需要更上层的异常处理者；其实tomcat是自带默认的异常处理器的，会自动返回异常的起因等等；
+
 - tomcat自定义异常处理地址
-  - 定义：errorPageRegistrar 添加tomcat出错时默认的错误页面地址，可以是静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]用于 回调errorPageRegistrar
-  - 其实 方法的入参/最后返回的ErrorPageRegistrar 就是TomcatServletWebServerFactory[是ErrorPageRegistrar的子类]
+  - 定义：errorPageRegistrar 添加tomcat出错时默认的错误页面地址，可以是servlet 、静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]用于 回调errorPageRegistrar()方法；
+    - //其实 errorPageRegistrar 方法的入参就是TomcatServletWebServerFactory[是ErrorPageRegistrar的子类]
+    - //tomcat捕获到spring框架外的异常会保存到Request域中，所以异常信息可以从Request域中获取；
   - ![image-20231027151151026](spring原理mac19-photos/image-20231027151151026.png)
   - ![image-20230625234214224](spring原理mac-photos/image-20230625234214224.png)
-  - tomcat捕获到spring框架外的异常会保存到Request域中；
   - ![image-20230625234424452](spring原理mac-photos/image-20230625234424452.png)
+
 - ![image-20230623174311022](spring原理mac.assets/image-20230623174311022.png)
-  
-- BasicErrorController
-  - 支持不同的响应格式[json格式  html格式]
+
+- BasicErrorController 自动会处理 spring未处理的异常，匹配的错误路径：1.(配置文件定义的属性)servler.error.path 2. error.path 3./error；
+
+  - 需要自己添加配置Bean  BasicErrorController，入参： ErrorAttributes[要显示的异常内容]   ErrorProperties[要读取的配置文件的键值信息]
+
+  - 支持不同的响应格式[json格式[如postMan请求]   html格式[如浏览器请求] ]
+
+    - 返回json格式的数据不需要特殊处理；
+    - 返回格式为html[如浏览器请求 postman设置Accept为text/html]，返回ModelAndView需要视图渲染，故需要自定义名为error的视图，这里用bean 定义视图+视图解析器【这里的BeanNameViewResolver会 把需要error视图的  MVC对应到上面用@Bean定义的名字为error的视图】
+    - ![image-20231031224638296](spring原理mac19-photos/image-20231031224638296.png)
+    - ![image-20231031230427998](spring原理mac19-photos/image-20231031230427998.png)
     - ![image-20230625235542579](spring原理mac-photos/image-20230625235542579.png)
-  - 返回格式为json[如postMan请求] 入参： ErrotAttributes[要显示的异常内容]   ErrorProperties[要读取的配置文件的键值信息]
-    - ![image-20230625235808206](spring原理mac-photos/image-20230625235808206.png)
-  - 返回格式为html[如浏览器请求 postman设置Accept为text/html]  需要自定义名为error的视图，这里用bean+视图解析器的方式提供
+
     - ![image-20230627124607491](spring原理mac-photos/image-20230627124607491.png)
     - ![image-20230627124713159](spring原理mac-photos/image-20230627124713159.png)
 
