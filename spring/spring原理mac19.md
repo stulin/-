@@ -433,48 +433,56 @@ RequestMappingHandlerAdapter
 
 
 
-### 第33讲  BeanNameUrlHandlerMapping与SimpleControllerHandlerAdapter
+### 第33讲  映射器和适配器
 
 - 这么多映射器和适配器，各自有优缺点和适用场景吗？还是做好历史兼容？
 
-- 之前用的RequestMappingHandlerMapping
-  - ![image-20230704212839256](spring原理mac-photos/image-20230704212839256.png)
-- 路径映射[需求解析@RequestMapping及其派生注解]    调用控制器方法[解析参数  调用 处理返回值]
-- BeanNameUrlHandlerMapping   不是去找@RequstMapping注解的方法，而是去找  名字是/ 开头的bean
-- SimpleControllerHandlerAdapter   [要求控制器的类必须实现Controller接口]
+- 之前用的 映射器和适配器 组合，组合一：RequestMappingHandlerMapping + RequestMappingHandlerAdapter; 
+
+  - 路径映射[需要解析@RequestMapping及其派生注解]    调用控制器方法[解析参数  调用 处理返回值]
+
+- 组合二：BeanNameUrlHandlerMapping   +  SimpleControllerHandlerAdapter  （spring更为早期的实现）
+
+  - BeanNameUrlHandlerMapping   不是去找@RequstMapping注解的方法，而是去找  名字是/ 开头的bean
+  - SimpleControllerHandlerAdapter   [要求控制器的类必须实现Controller接口，并重写handleRequest方法]
+
+- ![image-20230704212839256](spring原理mac19-photos/image-20230704212839256.png)
+
 - ![image-20230704215532370](spring原理mac-photos/image-20230704215532370.png)
+
 - ![image-20230704214047266](spring原理mac-photos/image-20230704214047266.png)
+
 - ![image-20230704214008638](spring原理mac-photos/image-20230704214008638.png)
-- 自定义MyHandlerMapping
-  -  自己获取容器的bean最简单的方法就是注入ApplicationContext；  需要先找到 容器中所有实现了controller接口的bean，结果保存到collect中；
+
+- 组合三：自定义MyHandlerMapping + 自定义MyHandlerAdapter  //仿照组合二的逻辑
+  -  MyHandlerMapping 实现 HandlerMapping  接口，重写getHandler方法，找到对应的controller并封装；//初始化方法找到所有 / 打头的bean；
+     -  //自己获取容器的bean最简单的方法就是注入ApplicationContext；  需要先找到 容器中所有实现了controller接口的bean，结果保存到collect中；
+  -  MyHandlerAdapter  实现 HandlerAdapter  接口并重写三个方法：supports(当前的Adapter是否能处理输入的controller)  handle(调用handleRequest)  getLastModified(已经不用了)
+     -  getLastModified已经过时；handle返回null表示不视图渲染流程；
   - ![image-20230704221620351](spring原理mac-photos/image-20230704221620351.png)
   - ![image-20230704221643227](spring原理mac-photos/image-20230704221643227.png)
 
-- 自定义MyHandlerAdapter
-  - getLastModified已经过时；handle返回null表示不视图渲染流程；
   - ![image-20230704221525389](spring原理mac-photos/image-20230704221525389.png)
 
-- RouterFunctionMapping与HandlerFunctionAdapter
+- 第四组：RouterFunctionMapping与HandlerFunctionAdapter (spring5.2才有，处理简单逻辑时相对简洁)
   - RouterFunctionMapping初始化时会找到容器中所有的RouterFunction，并添加到？？请求来了，会和所有的RouterFunction的条件进行匹配，匹配上就找到对应的处理函数；最后由adapter反射 调用函数
-  - 收集所有的RouterFunction，包括RequestPreficate[请求路径、请求方式等]  HandlerFunction [处理程序]，最后又HandlerFunctionAdapter调用handler
-  - 例：get请求、请求路径为/r1 ，由后面的处理器(函数式接口)响应；
+    - 收集所有的RouterFunction，包括RequestPreficate[依据请求路径、请求方式等映射条件找到handlerFunction]  HandlerFunction [处理处理逻辑]，最后由HandlerFunctionAdapter调用handler
   - 和@RequestMapping对比，核心是 映射路径的方式不同，依据 RequestPRedicate方式，参数解析等功能相对少，但是简洁
+  - ![image-20231101163745310](spring原理mac19-photos/image-20231101163745310.png)
     - ![image-20230706220402510](spring原理mac-photos/image-20230706220402510.png)
-
-- SimpleUrlHandlerMapping与HttpRequestHandlerAdapter
-  - SimpleUrlHandlerMapping映射；ResourceHttpRequestHandler作为处理器处理静态资源；HttpRequestHandlerAdapter调用处理器；
-  - SimpleUrlHandlerMapping 没有自动收集返回结果为ResourceHttpRequestHandler的类，需要自己初始化，把所有的类汇总；
+- 第五组：SimpleUrlHandlerMapping + HttpRequestHandlerAdapter + ResourceHttpRequestHandler//处理静态资源的
+    - SimpleUrlHandlerMapping映射；ResourceHttpRequestHandler 作为处理器处理静态资源[本质就是一个静态资源目录]；HttpRequestHandlerAdapter调用处理器；//ResourceHttpRequestHandler 还需要指定支持的路径通配符;  SimpleUrlHandlerMapping 自己编程初始化，手机 路径通配符-->ResourceHttpRequestHandler方法
   - tomcat三件套初始化略；
   - ![image-20230709104505234](spring原理mac-photos/image-20230709104505234.png)
   - ![image-20230709104437991](spring原理mac-photos/image-20230709104437991.png)
   - ResourceHttpRequestHandler优化//afterPropertiesSet 默认只有一个路径资源的解析器；这里设置为  缓存资源、压缩资源、路径资源；
+    - 使用EncodedResourceResolver路径资源解析器，还需要自己对html文件压缩
     - ![image-20230709105430751](spring原理mac-photos/image-20230709105430751.png)
-    - 要使用EncodedResourceResolver压缩功能还需要初始化进行html文件压缩
-      - ![image-20230709110510576](spring原理mac-photos/image-20230709110510576.png)
-  - 欢迎页[静态]   //将访问/路径的请求映射到欢迎页 //springBoot才有
-    - 入参：null, context, 欢迎页静态资源[用于判断是否存在]，指定处理器的 路径处理范围？？这里的/**对应前一讲静态资源的路径
+    - ![image-20230709110510576](spring原理mac-photos/image-20230709110510576.png)
+  - 第六组：欢迎页映射器 [静态]  WelcomePageHandlerMapping+ ResourceHttpRequestHandler+ SimpleControllerHandlerAdapter    //将访问根路径 / 的请求映射到欢迎页【可以是静态资源或者控制器】 //springBoot才有
+    - 入参：null, context, 欢迎页静态资源[用于判断是否存在]，/**[对应前一讲静态资源的路径]
+    - 底层执行流程：WelcomePageHandlerMapping中内置了一个handler，即ParameterizableViewController[内部实现了controller接口，所以后面适配器配合SimpleControllerHandlerAdapter]，作用是依据视图名找视图【视图名固定未forward:index.html】；找视图则用到了 ResourceHttpRequestHandler【第五组有用到，示例中配置的查找路径是static/】，handler会被SimpleControllerHandlerAdapter调用；
     - ![image-20230709111737048](spring原理mac-photos/image-20230709111737048.png)
-    - ![image-20230709111703047](spring原理mac-photos/image-20230709111703047.png)
   - 小结：
     - ![image-20230709143751184](spring原理mac-photos/image-20230709143751184.png)
 
@@ -490,61 +498,61 @@ RequestMappingHandlerAdapter
 
 ### 37构建Boot项目骨架
 
-- curl  https://start.spring.io/pom.xml  -d dependencies=mysql, mybatis,web -o pom.xml
+- (Powershell)   curl  https://start.spring.io/pom.xml  -d dependencies=mysql, mybatis,web -o pom.xml
+  - 也可以用postman
 - idea64 .\pom.xml
-- //help:  curl https://start.spring.io
+- //查看参数用法:  curl https://start.spring.io
 
 ### 38Boot War项目
 
-- jsp是能打包为war，这里视图用jsp； 
-
+- jsp只能打包为war，这里视图用jsp； 
 - idea--> new project-->spring initializr-->打包方式改为war, next-->勾选spring Web , finish
 - src/main下新建webapp[文件夹名字固定]，创建jsp文件； 
 - com.itheima的包下新建controller文件夹，新建controller文件； //字符串返回值会被解析成视图名
-
-- ![image-20230709160006344](spring原理mac-photos/image-20230709160006344.png)
-- 设置视图名字的前缀、后缀
-  - ![image-20230709160119880](spring原理mac-photos/image-20230709160119880.png)
-
-- //handlerMethod包含了控制器方法对象和控制器对象； preHandler判断请求是否被响应；
+- application.properties中可以设置视图名字的前缀、后缀
 - 外置tomcat
-  - 运行   配置-->  + -->tomcat server --> local  -->选择tomcat路径--> fix --> ==test5 : war exploded？？？== ,  context建议/ -->apply -->直接运行；
-  - 需要创建ServletInitializer类，作为外置tomcat接入springBoot的入口
-  - ![image-20230709162929784](spring原理mac-photos/image-20230709162929784.png)
+  - 运行   配置-->  + -->tomcat server --> local  -->选择tomcat路径--> fix --> ==test5 : war exploded(测试war exploded即可)？？？== ,  context建议填/ -->apply -->直接运行；
+  - 需要创建ServletInitializer类(通常骨架自带的)，作为外置tomcat接入springBoot的入口
 - 内嵌tomcat
   - 没有自带jsp解析器，需要加入jsp解析器
-  - ![image-20230709165138427](spring原理mac-photos/image-20230709165138427.png)
-  - ![image-20230709165006759](spring原理mac-photos/image-20230709165006759.png)
+- ![image-20230709160006344](spring原理mac-photos/image-20230709160006344.png)
+- ![image-20230709160119880](spring原理mac-photos/image-20230709160119880.png)
+- ![image-20230709162929784](spring原理mac-photos/image-20230709162929784.png)
+- ![image-20230709165138427](spring原理mac-photos/image-20230709165138427.png)
+- ![image-20230709165006759](spring原理mac-photos/image-20230709165006759.png)
 
 ### 39 Boot启动流程-构造方法
 
 - SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
-- 主要内容分为两块，构造方法 做了什么？【准备该做】run方法 做了什么？【真正创建spring容器】
+- 主要内容分为两块，SpringApplication构造，调用run方法 【12大步骤 7大事件】
 - 构造方法（准备工作，run方法创建spring容器）
-  - ![image-20230716142710782](spring原理mac-photos/image-20230716142710782.png)
+  - 获取Bean Definition源：配置类、xml文件等等；//引导类也是个配置类； 
+  - 推断应用类型：推断应用类型   springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext； //ClassUtils.isPresent 判断类路径下是否存在某个类
+  - ApplicationContext初始化器：可以添加初始化器对ApplicationContext添加扩展；//initialize方法的入参就是  applicationContext
+  - 监听器与事件：可以添加监听器 监听spring发布的事件 //入参event就是生成的事件
+  - 主类推断：推断主类即运行main方法的类；
+- ![image-20230716142710782](spring原理mac-photos/image-20230716142710782.png)
   - ![image-20230716142514501](spring原理mac-photos/image-20230716142514501.png)
-  - 进一步显示bean的来源
-    - ![image-20230716144308341](spring原理mac-photos/image-20230716144308341.png)
-- 示例：设置BeanDefinition源
-  - BeanDefinition源：配置类、xml文件等等；这里主要是指引导类； 
+  - ![image-20230716144308341](spring原理mac-photos/image-20230716144308341.png)
   - ![image-20230711124048783](spring原理mac-photos/image-20230711124048783.png)
-- 示例：推断应用类型   //ClassUtils.isPresent 判断类路径下是否存在某个类
-  - springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext； 
-  - ![image-20230711124448244](spring原理mac-photos/image-20230711124448244.png)
+- ![image-20230711124448244](spring原理mac-photos/image-20230711124448244.png)
   - ![image-20230711124758864](spring原理mac-photos/image-20230711124758864.png)
-- ApplicationContext初始化
-  - 初始化器对ApplicationContext添加扩展；
-  - initialize的入参就是  容器的初始化器
-  - ![image-20230711194220069](spring原理mac-photos/image-20230711194220069.png)
-- 监听器与事件
-  - 入参event就是生成的事件
-  - ![image-20230711195830198](spring原理mac-photos/image-20230711195830198.png)
-- 推断主类即运行main方法的类；
-  - ![image-20230711200137785](spring原理mac-photos/image-20230711200137785.png)
+- ![image-20230711194220069](spring原理mac-photos/image-20230711194220069.png)
+- ![image-20230711195830198](spring原理mac-photos/image-20230711195830198.png)
+- ![image-20230711200137785](spring原理mac-photos/image-20230711200137785.png)
 
 #### 39 Boot启动流程-run
 
-- ![image-20230716144717300](spring原理mac-photos/image-20230716144717300.png)
+- 得到SpringApplicationRunListeners，名字取得不好，实际是事件发布器
+  - 发布application starting事件
+- 封装启动args
+- 准备Environment添加命令行参数
+- ConfigurationPropertySources处理
+  - 发布application environment已准备事件
+- 通过EnvironmentPostProcessorApplicationListener进行env后处理
+  - application.properties，由StandardConfigDataLocationResolver解析
+  - spring.application.json；
+
 - 事件发布
   - SpringApplicationRunListener的实现类只有一个，接口、实现类的对应关系保存在配置文件中（spring-boot-***.META-INF.spring .factories），SpringFactoriesLoader提供相关访问方法； loadFactoryNames入参：接口类型、classLoader
   - 在spring一些重要节点结束之后就发布事件；
