@@ -543,57 +543,65 @@ RequestMappingHandlerAdapter
 
 #### 39 Boot启动流程-run
 
-- 得到SpringApplicationRunListeners，名字取得不好，实际是事件发布器
-  - 发布application starting事件
-- 封装启动args
-- 准备Environment添加命令行参数
-- ConfigurationPropertySources处理
+- tips:单行代码往上移动，alt+shift+上箭头； 打印数组  Arrays.toString
+- 1 得到SpringApplicationRunListeners并发布 application starting事件 //名字取得不好，实际是事件发布器
+  - SpringApplicationRunListener的实现类只有一个，接口、实现类的对应关系保存在配置文件中（spring-boot-***.META-INF.spring .factories），SpringFactoriesLoader提供相关访问方法； 
+    - loadFactoryNames入参：接口类型、classLoader
+  - 反射创建发布器（调的是有参构造）SpringApplicationRunListener，并模拟发送各个事件//关注发布哪些事件即可，不必过于在意每个方法入参
+    - 在spring一些重要节点结束之后就发布事件，如开始启动、环境信息准备完毕等；
+- 2 封装启动args：参数封装为ApplicationArguments，第12步runner接口要用到；
+- 3 准备Environment添加命令行参数： 准备环境对象；添加命令行参数来源[暂时没有approperties的来源]；
+  - 配置信息来源：系统环境变量   properties yaml，多个来源的数据汇总到一起，形成了环境对象
+  - ApplicationEnvironment默认两个来源  propertySources：系统属性[VM option，例-Denv=FAT]、系统环境[操作系统的环境变量]；有先后查找顺序；
+  - approperties、命令行参数[prgram arguments，例如--server.port=7070]  等人工的属性，可以手工添加新的来源；通过添加propertySource的方式；
+- 4 ConfigurationPropertySources处理：
+  - 为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
   - 发布application environment已准备事件
-- 通过EnvironmentPostProcessorApplicationListener进行env后处理
+- 5 通过EnvironmentPostProcessorApplicationListener进行env后处理
+  - 对env进一步增强，补充propertySource[通过后处理器的方式，application.propertiies对应的源、产生随机数的源等]，对应接口EnvironmentPostProcessor，对应的实现有多个如ConfigDataEnvironmentPostProcessor等；  // spring中具体使用的EnvironmentPostProcessor实现类是spring.factories中配置，实现方式是通过监听器读取配置，进行增强[environmentPrepared事件发布、监听、增强{补充propertySource}]；
   - application.properties，由StandardConfigDataLocationResolver解析
-  - spring.application.json；
+- spring.application.json；
+- 8 创建容器
+- 9 准备容器 //包括执行 容器的初始化器等；
+- 10 加载bean定义 // 主要包括三种： 配置类定义  bean、xml、包扫描【使用工具类classPathBeanDefinitionScanner】
+  - bean的类名 xml位置  扫描路径等本质上是springApplication.setResource方法设置的；
+- 11 refresh容器
+- 12 执行runner
+  - runner接口分为两类（ 内容可以自行确定，如可以用于预加载数据等）：
+    - CommandLineRunner    入参直接就是main的参数； 
+    - ApplicationRunner   入参是main的参数封装为ApplicationArguments；选项参数【--开头】和非选项参数的获取方式不大一样；
 
-- 事件发布
-  - SpringApplicationRunListener的实现类只有一个，接口、实现类的对应关系保存在配置文件中（spring-boot-***.META-INF.spring .factories），SpringFactoriesLoader提供相关访问方法； loadFactoryNames入参：接口类型、classLoader
-  - 在spring一些重要节点结束之后就发布事件；
-  - 反射创建发布器（调的是有参构造），并模拟发送各个事件//关注发布哪些事件即可，不必过于在意每个方法入参
+- 1
+
   - ![image-20230711204420913](spring原理mac-photos/image-20230711204420913.png)
   - ![image-20230711204518120](spring原理mac-photos/image-20230711204518120.png)
 
-- 后续步骤
-  - 这里bean定义读取，以获取  类定义配置  bean、xml、classPathBeanDefinitionScanner为例；
-  - 第10不用到的bean的类名 xml位置  扫描路径等本质上是.setResource方法设置的；
-  - 1？  8 9 10 11设置增强；回调增强；加载bean定义；准备好bean定义才好调用 refresh()方法：准备后处理器，初始化所有单例；
-    - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
-    - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
-  - 2  12run接口风味两类（入参不同  可以用于预加载数据等）：CommandLineRunner    main传的， ApplicationRunner  封装后的；
+- 8--11
+
+  - ![image-20231103142912675](spring原理mac19-photos/image-20231103142912675.png)
+  - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
+  - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
+
+  - 2   12
     - ![image-20230716155125046](spring原理mac-photos/image-20230716155125046.png)
     - ![image-20230716155615132](spring原理mac-photos/image-20230716155615132.png)
-    - 添加参数
+    - main方法添加参数
       -  ![image-20230716155323268](spring原理mac-photos/image-20230716155323268.png)
     - ![image-20230716155516289](spring原理mac-photos/image-20230716155516289.png)
-  - 3 4 5 6环境对象有关[配置信息的抽象]    //系统环境变量   properties yaml
-  - step3：设置env变量；设置命令行变量[暂时没有approperties的来源]；
-  - ApplicationEnvironment默认两个来源  propertySources：系统属性[VM option]、系统环境[操作系统的环境变量]；有先后查找顺序；
-  - 添加系统属性
-    
+  - 3
     - ![image-20230716223044795](spring原理mac-photos/image-20230716223044795.png)
-  - approperties、命令行[prgram arguments]  等人工的属性，可以手工添加；通过添加propertySource的方式；
-  
     - ![image-20230720192319042](spring原理mac-photos/image-20230720192319042.png)
-  - step4：为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
-  
+  - step4：
+
     - ![image-20230720192153496](spring原理mac-photos/image-20230720192153496.png)
-  - step5：对env进一步增强，补充propertySource[通过后处理器的方式，property对应的源就是在这一步添加]；   spring中是通过监听器读取配置，进行增强[事件发布、监听、增强]；
-  
+  - step5：
+
     - ![image-20230720194759521](spring原理mac-photos/image-20230720194759521.png)
-  
-    - ![image-20230720200059050](spring原理mac-photos/image-20230720200059050.png)
-  - 补充：绑定env中键值到对象；
-  
-    - ![image-20230720202642913](spring原理mac-photos/image-20230720202642913.png)
+  - ![image-20230720200059050](spring原理mac-photos/image-20230720200059050.png)
+    - ![image-20231103180723166](spring原理mac19-photos/image-20231103180723166.png)
+    - ![image-20231103181054145](spring原理mac19-photos/image-20231103181054145.png)
   - step6：配置文件中键值绑定到springApplication
-  
+
     - ![image-20230720203049098](spring原理mac-photos/image-20230720203049098.png)
   - step7:打印banner，需要借助SpringApplicationBannerPrinter[会把banner转换为文本信息]，可以自己指定banner，不指定会使用默认的banner；版本信息从spring boot jar包获取，manifest.mf中有版本信息;
   - boot执行流程---小结
