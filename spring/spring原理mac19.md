@@ -610,7 +610,6 @@ RequestMappingHandlerAdapter
 
 - tomcat重要组件
   - tomcat能直接识别的只有三大组件，经过web.xml配置的 servlet filter  listener[3.0之后可以不用配置，编程动态添加三大组件]，controller  service只能被三大组件调用；
-  - 
   - ![image-20230723135942290](spring原理mac-photos/image-20230723135942290.png)
 - 内嵌tomcat使用示例
   - 一个应用【context】通常要设置 虚拟路径【即起始路径，不同应用不能重复】、磁盘路径【在磁盘上的存储位置】、初始化器【添加servlet】、连接器
