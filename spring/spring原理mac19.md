@@ -571,22 +571,22 @@ RequestMappingHandlerAdapter
   - runner接口分为两类（ 内容可以自行确定，如可以用于预加载数据等）：
     - CommandLineRunner    入参直接就是main的参数； 
     - ApplicationRunner   入参是main的参数封装为ApplicationArguments；选项参数【--开头】和非选项参数的获取方式不大一样；
-- 1
+- step 1
 
   - ![image-20230711204420913](spring原理mac-photos/image-20230711204420913.png)
   - ![image-20230711204518120](spring原理mac-photos/image-20230711204518120.png)
-- 8--11
+- step 8--11
 
   - ![image-20231103142912675](spring原理mac19-photos/image-20231103142912675.png)
   - ![image-20230716155741282](spring原理mac-photos/image-20230716155741282.png)
   - ![image-20230716155830749](spring原理mac-photos/image-20230716155830749.png)
-- 2   12
+- step 2   12
     - ![image-20230716155125046](spring原理mac-photos/image-20230716155125046.png)
     - ![image-20230716155615132](spring原理mac-photos/image-20230716155615132.png)
     - main方法添加参数
       -  ![image-20230716155323268](spring原理mac-photos/image-20230716155323268.png)
     - ![image-20230716155516289](spring原理mac-photos/image-20230716155516289.png)
-  - 3
+  - step 3
     - ![image-20230716223044795](spring原理mac-photos/image-20230716223044795.png)
     - ![image-20230720192319042](spring原理mac-photos/image-20230720192319042.png)
   - step4：
@@ -606,26 +606,28 @@ RequestMappingHandlerAdapter
     - 源码阅读：新建一个事件发布器（listener）； 发布starting事件；参数封装【--的为命令行源，不带的不是】；创建environment对象，参数消息封装为propertySource源添加进来；对命名不规范的键处理；发布environmentPrepared事件，监听器会添加postProcessor，增加environment添加更多源；environment中以springmain为前缀的key和springApplication对象做绑定；打印banner消息；创建spring容器，依据三种容器类型选择实现；应用初始化器，增强applicaionContext; [发布contrextPrepared];得到所有的beanDefinition源，并加载到ApplicationContext；[发布contextLoaded事件]；调用ApplicationCOntext的refresh方法[调用bean工厂  bean  初始化每个单例 ]；发布started事件；调用所有实现APplicationRunner接口、commandLine接口的Runner的Bean;[发布running事件]
     - ![image-20230723134849650](spring原理mac-photos/image-20230723134849650.png)
 
-### 第三十讲：tomcat
+### 第四十讲：tomcat
 
 - tomcat重要组件
-  - tomcat能识别的只有三大组件，经过web.xml配置的 servlet filter  listener[3.0之后可以不用配置，编程动态添加]
+  - tomcat能直接识别的只有三大组件，经过web.xml配置的 servlet filter  listener[3.0之后可以不用配置，编程动态添加三大组件]，controller  service只能被三大组件调用；
+  - 
   - ![image-20230723135942290](spring原理mac-photos/image-20230723135942290.png)
 - 内嵌tomcat使用示例
-  - tomcat.adContext:如果要用/作为虚拟目录，第一个参数要传"";
+  - 一个应用【context】通常要设置 虚拟路径【即起始路径，不同应用不能重复】、磁盘路径【在磁盘上的存储位置】、初始化器【添加servlet】、连接器
+  - //tomcat.addContext入参：如果要用/作为虚拟目录，第一个参数要传"";  baseDir即基础目录，保存临时文件等；
   - servletContainerInitializer不会添加后立刻执行，会在tomcat.start()方法调用后，创建servletConext对象并回调；
   - ![image-20230723144314109](spring原理mac-photos/image-20230723144314109.png)
   - ![image-20230723144331196](spring原理mac-photos/image-20230723144331196.png)
   - ![image-20230723144357953](spring原理mac-photos/image-20230723144357953.png)
 - 内嵌tomcat与spring融合
-  - 几个术语的含义实例：context为tomcat中的组件，含义通常为一个应用；applicationContext是spring中的概念，含义通常是spring容器，内含所有的bean等信息；servletContext则是tomcat中的组件，含义是应用中包含的servlet等信息；
-  - 需要拿到springContext ，并把对对应的servlet、dispatcherServlet添加到servletContext【ctx.addServlet】/或者借用spring的ServletRegisrationBean的onStartup方法注册到servletContext
-  - 上述的tomcat创建、结合spring、与启动，本质上实在AbstractApplicationContext的refresh()中实现的；
+  - 核心的步骤就一个：springContext获取DispatcherServlet并添加到tomcat的context中【ctx.addServlet 或  ServletRegistrationBean.onStartup】，当请求匹配到dispatcherServlet的路径时，就会走spring后续流程；
+    - 上述的tomcat创建、结合spring，本质上实在AbstractApplicationContext的onRefresh()中实现的；在finishRegresh()中启动tomcat
+  - 几个术语的含义实例：context为tomcat中的概念，含义通常为一个应用；applicationContext是spring中的概念，含义通常是spring容器，内含所有的bean等信息；servletContext则是tomcat中的组件，含义是应用中包含的servlet等信息；
   - ![image-20230723154753265](spring原理mac-photos/image-20230723154753265.png)
   - ![image-20230723161733552](spring原理mac-photos/image-20230723161733552.png)
   - ![image-20230723161711554](spring原理mac-photos/image-20230723161711554.png)
 
-#### 第三十一讲：自动配置
+#### 第四十一讲：自动配置
 
 - 配置类整合原理
   - 也是Bean，但一般是多个项目通用的bean;
@@ -720,7 +722,7 @@ RequestMappingHandlerAdapter
   - ![image-20230801200623628](spring原理mac-photos/image-20230801200623628.png)
   - ![image-20230801201547845](spring原理mac-photos/image-20230801201547845.png)
 
-#### 第三十二讲：条件装配底层
+#### 第四十二讲：条件装配底层
 
 - matches方法可以提供一些必要的信息，如通过context获取beanFactory信息，metadata获取类的注解信息；
 - ClassUtils.isPresent 判断类路径下是否存在某个类；
