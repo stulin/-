@@ -721,30 +721,35 @@ RequestMappingHandlerAdapter
   - ![image-20230801200623628](spring原理mac-photos/image-20230801200623628.png)
   - ![image-20230801201547845](spring原理mac-photos/image-20230801201547845.png)
 
-#### 第四十二讲：条件装配底层
+### 第42讲：条件装配底层
 
-- matches方法可以提供一些必要的信息，如通过context获取beanFactory信息，metadata获取类的注解信息；
-- ClassUtils.isPresent 判断类路径下是否存在某个类；
-- 就是@Conditonal + 一个实现了condition接口的类；
+- 条件装配 = 上述自动配置 + @Conditianal + 自定义类实现Condition接口进行条件判断
+  - matches方法可以提供一些必要的信息，如通过context获取beanFactory信息，metadata获取类的注解信息；
+  - ClassUtils.isPresent 判断类路径下是否存在某个类；
+  - tips: 类定义处 --> 右键类名 --> copy refrence 得到的是带.的引用方式;   .cast;   微软输入法  全/半角切换：shift + 空格；
 - 例子
   - ![image-20230801203113698](spring原理mac-photos/image-20230801203113698.png)
 - 改进：是否存在的具体类名抽成变量；存在和不存在可以整合；参考@ConditionOnBean自己定义一个注解整合@Condition和指定的类
+  - ==看着下面的用法，可以得出两个结论：1. 一个注解内部有父注解的话，父注解通常是会生效的（重点是要看注解对应的切点表达式的写法了，是否递归查询自注解） 2. 这里回调方法中AnnotatedTypeMetadata获取的 注解源信息中的注解指的是子注解（具体原因要看通知的写法了），和我们一般从类获取注解信息的逻辑是契合的==
   - getAnnotationAttributes获取关联类的注解的属性信息，入参：注解的类名
   - ![image-20230801205054348](spring原理mac-photos/image-20230801205054348.png)
 
-### 第四十三讲Factory Bean
+### 第43讲Factory Bean
 
-- 工厂Bean要实现三个方法，getObjectType 返回产品类型[依据类型获取时用到]； isSingleton  单例还是多例； getObject 提供产品对象； 
-  - context.getBean(name)，name传工厂类的bean名字，但是取到的确是产品对象；
-  - 获取工厂对象本身，依据类型获取，或者name传 &name
-  - ![image-20230806135901239](spring原理mac-photos/image-20230806135901239.png)
-- 工厂的产品只会部分受spring管理；
-  - 通过facttoryBean创建 产品，因为用的new Bean1()即构造方法，所以Bean1中的注解不生效；容器的前处理器检测到不到产品，但是==后处理器可以检测到==；
-  - 产品如果单例不会入beanFactory的单例池，会有另外一个集合存放产品的单例池；
+- 常用于创建复杂的产品，但是@Bean已经有等价的功能
+- factory bean的定义示例：首先编写Bean1的类定义，然后在Bean1FactoryBean的类定义上添加注解 @Bean("bean1")
+  - 工厂Bean要实现三个方法，getObjectType 返回产品类型[getBean  依据类型获取时用到]； isSingleton  产品是单例还是多例； getObject 提供产品对象； 
+- 工厂类受spring管理，但是工厂的产品只会部分受spring管理；
+  - context.getBean(name)，name传bean1，但是取到的确是产品对象；
+  - 获取工厂对象本身：依据类型获取，或者传 &bean1
+  - factory bean是spring创建的，但是产品时 factory bean调用bean1的构造创建的【不是spring创建的】，所以依赖注入 aware回调 初始化都不生效，但是bean初始化后的后处理器器会生效【通常是走代理】；
+  - 产品如果单例不会入beanFactory的单例池singleObjects，会放在factoryBeanObjectCache；
+  - ![image-20231115111610977](spring原理mac19-photos/image-20231115111610977.png)
   - ![image-20230806140333914](spring原理mac-photos/image-20230806140333914.png)
+  - ![image-20231115112013563](spring原理mac19-photos/image-20231115112013563.png)
   - ![image-20230806135945477](spring原理mac-photos/image-20230806135945477.png)
   - ![image-20230806140003735](spring原理mac-photos/image-20230806140003735.png)
-- ![image-20230806140444287](spring原理mac-photos/image-20230806140444287.png)
+  - ![image-20230806135901239](spring原理mac19-photos/image-20230806135901239.png)
 
 ### 第四十四讲 @Indexed的原理
 
