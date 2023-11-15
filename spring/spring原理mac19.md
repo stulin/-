@@ -4,6 +4,8 @@
 
 ==解锁了注解的新一种用法，使用回调方法+ MethodParameter.getParameterAnntation(Interface.class)对带有特定注解的参数或方法做处理；==
 
+@Conditional注解还是蛮好玩的，可以玩玩
+
 
 ### 第十九讲 动态通知调用
 
@@ -626,60 +628,61 @@ RequestMappingHandlerAdapter
   - ![image-20230723161733552](spring原理mac-photos/image-20230723161733552.png)
   - ![image-20230723161711554](spring原理mac-photos/image-20230723161711554.png)
 
-#### 第四十一讲：自动配置
+### 第四十一讲：自动配置
 
-- 配置类整合原理
-  - 也是Bean，但一般是多个项目通用的bean;
-  - 为了引入三方配置类 的类名可以写进配置文件，使用ImportSelector接口，接口的selectImports方法的返回值就是要导入的配置类的类名，
-  - resources/META-INF/spring.factories   配置文件名 //细节：换行加/，内部类用$而不是.
-  - 示例：整合第三方的配置类； @Import+ ImportSelctor接口；
+- 自动配置简单用法
+  - 本质：@Configuration注解修饰的Bean，但这些bean有一定通用性，不同项目都可以引入 ;
+  - 整合第三方的配置类：可以自定义一个Config配置类，用@Import注解导入第三方配置类 ；进一步优化，希望在配置文件中配置第三方配置类的类名(而不是写死导入的第三方类)，@Import+ImportSelector 【方法发hi之就是配置类的类名】+SpringFactoriesLoader读取配置文件信息；    
+  -  配置文件名位置：resources/META-INF/spring.factories   //细节：换行加 \ +回车，类名中内部类的链接符用$而不是.
+  - 示例：整合第三方的配置类； @Import+ ImportSelctor接口+SpringFactoriesLoader读取配置文件信息；
     - ![image-20230723164349903](spring原理mac-photos/image-20230723164349903.png)
     - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
 - 自动配置原理
-  - spring会自动扫描当前目录、所有jar包目录的spring.factories的配置；要看自动配置，只要选EnableAutoConfiguration.class的名字为key的值；
+  - 使用@Import注解，spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置；
+  - 例如：要查所有jar保的spring.factories中，key名为EnableAutoConfiguration【自动配置信息】的所有配置类；
     - ![image-20230724222748984](spring原理mac-photos/image-20230724222748984.png)
-  - 同一个bean在三方和本项目都有，解析顺序：第三方、本项目；beanFactory默认后注册的Bean会覆盖先注册的bean[springBoot默认不可覆盖]；
-  - 为保证本项目优先级，ImportSelector接口改为DeferredImportSelector，会先解析本项目的配置类；同时保证不会重复注册报错，需要在三方配置添加注解@ConditioanalOnMissingBean注解，即本项目没有时自动配置类第三方bean才生效；
+  - 特殊情况：同一个bean在三方和本项目都有
+    - spring解析顺序：第三方、本项目；beanFactory默认后注册的Bean==会覆盖==先注册的bean[==springBoot默认不可覆盖==]；
+    - springBoot：  @Import+ ==DeferredImportSelector接口==+SpringFactoriesLoader读取配置文件信息+==@ConditioanalOnMissingBean==；//还有一个setAllowBeanDefinitionOverring(false)
+      - springboot在不可覆盖的情况下为保证本项目优先级，ImportSelector接口改为DeferredImportSelector【推迟导入接口】，会先解析本项目的配置类；同时为保证不会重复注册报错，需要在三方配置添加注解@ConditioanalOnMissingBean注解，即本项目没有时自动配置类第三方bean才生效；
   - ![image-20230724224402006](spring原理mac-photos/image-20230724224402006.png)
   - ![image-20230724224450182](spring原理mac-photos/image-20230724224450182.png)
   - ![image-20230724224602921](spring原理mac-photos/image-20230724224602921.png)
   - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
-- 常见的自动配置类学习---AOP
+- 常见的自动配置类学习---AOP   AopAutoConfiguration.class.getName()
+  - 查看自己配置添加类  示例代码：
+    - 第二步会添加常见的后处理器；
+    - 下方红色框内的四个注解是AopAutoConfiguration带来的；
+    - 示例：手工添加键值；
   - ![image-20230724230010394](spring原理mac-photos/image-20230724230010394.png)
-  
-  - 第二步会添加常见的后处理器；
-  
-  - 下方红色框内的四个注解是AopAutoConfiguration带来的；
-  
   - ![image-20230724230453378](spring原理mac-photos/image-20230724230453378.png)
-  
   - AopAutoConfiguration源码解析
   
-    - 用了很多注解来实现if else；   @ConditionalOnproperty：条件满足才导入该类，@ConditionalOnClass等则类似；matchIfMissing 缺失了也满足；
+    - 用了很多注解来实现if else；   @ConditionalOnproperty：条件【配置文件找到对应的键值，并且键值满足对应条件】满足才导入该类，@ConditionalOnClass【类路径下是否存在指定类】等则类似；@ConditionalOnMissingClass【类路径下是否不存在指定类】 matchIfMissing 缺失了也满足；@Conditonal + 实现了Condition接口的类使用，如果覆写的Condition接口的matches返回true则符合条件
+      - https://www.cnblogs.com/cxuanBlog/p/10960575.html
     - ![image-20230730143118404](spring原理mac-photos/image-20230730143118404.png)
-  
     - ![image-20230730142648761](spring原理mac-photos/image-20230730142648761.png)
     - ==ps：这里的默认配置指的是当前测试类，不是spring默认配置了；==
-    - 两个@ConfiditonOnProperty的配置的他加你相反，可以理解为if else;
-    - 补充：@EnableAspectJAutoProxy的本质是使用@Import注解进行配置导入，的作用是添加一个自动代理创建器；接口ImportBeanDefinitionRegistrar以编程的方式把bean的beanDefinition加入到容器；
+    - 补充：@EnableAspectJAutoProxy的本质是使用@Import注解进行配置导入，导入的一个自动代理创建器，实现接口ImportBeanDefinitionRegistrar：编程的方式[registerAspectJAnnotationAutoProxyCreatorIfNecessary]把bean的beanDefinition加入到容器，最终添加的AnnotationAwareAspectJAutoProxyCreator.class[创建代理对象的]；
+      - proxyTargetClass属性说明：为false，目标实现接口采用jdk，没有实现接口采用cglib；为true，统一采用cglib
     - 看一眼容器的代理配置
       - ![image-20230730143413469](spring原理mac-photos/image-20230730143413469.png)
-- 常见的自动配置类学习---DataSource  Mybatis  事务  MVC
-  - 测试代码：
+- 常见的自动配置类 ---DataSource  Mybatis  事务  MVC
+  - 添加示例 测试代码：
     - ![image-20230730151116160](spring原理mac-photos/image-20230730151116160.png)
     - ![image-20230730151045527](spring原理mac-photos/image-20230730151045527.png)
     - ![image-20230730153351805](spring原理mac-photos/image-20230730153351805.png)
   - 自动配置——dataSource;  DataSourceAutoConfiguration
     - DataSourceBean的配置需要 数据库url 用户名 密码等；
     - DataSourceAutoConfiguration会选择哪个实现类？
-      - 看代码条件可以知道，一般会是HikariDatSource
-      - 是否有基于连接池的数据源：一般有HikariDatasource； mybatis jar包，下面 有jdbc jar包，下面有HikariCp；
+      - 看代码条件可以知道，一般会是HikariDatSource 
+      - 是否有基于连接池的数据源：一般有HikariDatasource； mybatis jar包，下面 有jdbc jar包，下面有Hikari；
       - ![image-20230730152957909](spring原理mac-photos/image-20230730152957909.png)
       - ![image-20230730151724369](spring原理mac-photos/image-20230730151724369.png)
     - DataSource获取url等配置信息
-      - @EnableConfigurationProperties会注册后处理器以支持绑定，属性为 DataSourceProperties.class表示会创建该对象，会绑定键值信息——以spring.datasource打头；在创建dataSource的时候会用到；
+      - @EnableConfigurationProperties会注册bean后处理器以支持绑定，属性为 DataSourceProperties.class表示会new一个该对象，并会绑定键值信息——以spring.datasource打头键值绑定到上面创建的对象； //在创建dataSource的时候会用到；
       - ![image-20230730152325700](spring原理mac-photos/image-20230730152325700.png)
-      - ==工厂方法[一般是指带有@Bean注解吗？]可以依据类型去容器找实现类？？==
+      - @Bean注解的方法是工厂方法，入参可以自动去容器中依据类型getBean
       - ![image-20230730152737350](spring原理mac-photos/image-20230730152737350.png)
   -  自动配置——Mybatis
     - SqlSessinFactory.class   SqlSessionFactoryBean.class 这两个类在Mybatis的jar包中有；
@@ -721,7 +724,7 @@ RequestMappingHandlerAdapter
   - ![image-20230801200623628](spring原理mac-photos/image-20230801200623628.png)
   - ![image-20230801201547845](spring原理mac-photos/image-20230801201547845.png)
 
-#### 第四十二讲：条件装配底层
+### 第四十二讲：条件装配底层
 
 - matches方法可以提供一些必要的信息，如通过context获取beanFactory信息，metadata获取类的注解信息；
 - ClassUtils.isPresent 判断类路径下是否存在某个类；
