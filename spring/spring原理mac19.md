@@ -6,6 +6,8 @@
 
 @Conditional注解还是蛮好玩的，可以玩玩
 
+git 本地处理merge的方法：自己编辑 冲突文件，删除三个标记(<<<HEAD  =====  >>>>new_branch)，git add,  git commit, git push即可  https://blog.csdn.net/u010393510/article/details/127121169
+
 
 ### 第十九讲 动态通知调用
 
