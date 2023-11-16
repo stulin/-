@@ -751,30 +751,32 @@ RequestMappingHandlerAdapter
   - ![image-20230806140003735](spring原理mac-photos/image-20230806140003735.png)
   - ![image-20230806135901239](spring原理mac19-photos/image-20230806135901239.png)
 
-### 第四十四讲 @Indexed的原理
+### 第44讲 @Indexed的原理
 
-- 作用：编译阶段就实现扫描，减少扫描时间
-- spring5.0之后，scan方法在找不到spring.components文件的情况下，才会真正去做包扫描
-  - target--classes--META-INF，spring.components文件
-  - spring.components生成的条件，添加依赖
-    - 编译阶段，去找类是否有@Indexed注解[@Coponent注解中有]
-    - ![image-20230806141841424](spring原理mac-photos/image-20230806141841424.png)
-- ![image-20230806142037745](spring原理mac-photos/image-20230806142037745.png)
+- 作用：编译阶段就实现扫描，减少扫描时间  // spring组件扫描效率很低；
+- spring5.0之后，scan方法在找不到spring.components文件的情况下（找到了就不扫描Jar包和类），才会真正去做包扫描 //target--classes--META-INF，spring.components文件
+  - 编译阶段，去找包含@Indexed注解的类[@Coponent的父注解]，然后添加到spring.components
+  - 需要添加依赖spring-context-indexer
+- ![image-20230806141841424](spring原理mac-photos/image-20230806141841424.png)
+- ![image-20231116191955874](spring原理mac19-photos/image-20231116191955874.png)
 
-### 第四十五讲  spring代理的特点(结合代理的AOP模式讲解)
+### 第45讲  spring代理的特点(结合代理的AOP模式讲解)
 
-- 依赖追和初始化影响的时原始对象； 生成代理对象之后，切点才会生效；
-  - 下面==目标对象==初始化时自动调用set init方法不会被增强，==代理对象==的手工调用会增强；
+- 依赖追和初始化影响的是原始对象； 生成代理对象之后，切点才会生效；
+  - 例：bean1注入bean2，且有一个初始化方法；创建一个切面类切点为bean1所有方法；context中获取对象的时候会发现：注入和初始化都没有被增强；
+  
+- 代理对象和目标对象并不公用属性
+
+  - 可以发现代理对象的两个属性均为空值，但是目标对象有值，因为依赖注入和初始话针对目标对象；  代理对象的getBean2()  isInitialized()等方法底层调用的还是目标对象的属性；
+  - static方法  final方法  private方法 无法被增强，只有可以被重写的方法能被增强；
+
+- 示例代码：
+
   - ![image-20230806151914555](spring原理mac-photos/image-20230806151914555.png)
   - ![image-20230806151930135](spring原理mac-photos/image-20230806151930135.png)
   - ![image-20230806151953223](spring原理mac-photos/image-20230806151953223.png)
-- 代理对象和目标对象并不公用属性
-  - spring单例池中只存代理对象，不存目标对象；要获取目标对象，需要先转换为Adivised接口；
-    - ![image-20230806152513842](spring原理mac-photos/image-20230806152513842.png)
-  - 初始化时进行了依赖呼入和init的时目标对象；  代理对象的getBean2  isInitialized等方法底层调用的还是目标对象的属性；
-    - ![image-20230806153158011](spring原理mac-photos/image-20230806153158011.png)
-  - static方法  final方法  private方法 无法被增强，只有可以被重写的方法能被增强；
-    - ![image-20230806153755056](spring原理mac-photos/image-20230806153755056.png)
+- ==spring单例池中==只存代理对象，不存目标对象；要获取目标对象，需要先转换为Adivised接口并调用方法获取；
+  - ![image-20231116200405806](spring原理mac19-photos/image-20231116200405806.png)
 
 ### 第四十六讲 @Value注入底层（结合第四讲学习）
 
