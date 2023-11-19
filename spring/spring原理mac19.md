@@ -610,7 +610,7 @@ RequestMappingHandlerAdapter
     - 源码阅读：新建一个事件发布器（listener）； 发布starting事件；参数封装【--的为命令行源，不带的不是】；创建environment对象，参数消息封装为propertySource源添加进来；对命名不规范的键处理；发布environmentPrepared事件，监听器会添加postProcessor，增加environment添加更多源；environment中以springmain为前缀的key和springApplication对象做绑定；打印banner消息；创建spring容器，依据三种容器类型选择实现；应用初始化器，增强applicaionContext; [发布contrextPrepared];得到所有的beanDefinition源，并加载到ApplicationContext；[发布contextLoaded事件]；调用ApplicationCOntext的refresh方法[调用bean工厂  bean  初始化每个单例 ]；发布started事件；调用所有实现APplicationRunner接口、commandLine接口的Runner的Bean;[发布running事件]
     - ![image-20230723134849650](spring原理mac-photos/image-20230723134849650.png)
 
-### 第四十讲：tomcat
+### 第40讲：tomcat
 
 - tomcat重要组件
   - tomcat能直接识别的只有三大组件，经过web.xml配置的 servlet filter  listener[3.0之后可以不用配置，编程动态添加三大组件]，controller  service只能被三大组件调用；
@@ -630,101 +630,109 @@ RequestMappingHandlerAdapter
   - ![image-20230723161733552](spring原理mac-photos/image-20230723161733552.png)
   - ![image-20230723161711554](spring原理mac-photos/image-20230723161711554.png)
 
-### 第四十一讲：自动配置
+### 第41讲：自动配置
 
-- 自动配置简单用法
+- 整合第三方的配置类
   - 本质：@Configuration注解修饰的Bean，但这些bean有一定通用性，不同项目都可以引入 ;
-  - 整合第三方的配置类：可以自定义一个Config配置类，用@Import注解导入第三方配置类 ；进一步优化，希望在配置文件中配置第三方配置类的类名(而不是写死导入的第三方类)，@Import+ImportSelector 【方法发hi之就是配置类的类名】+SpringFactoriesLoader读取配置文件信息；    
-  -  配置文件名位置：resources/META-INF/spring.factories   //细节：换行加 \ +回车，类名中内部类的链接符用$而不是.
+  - 整合第三方的配置类：
+    - 可以自定义一个Config配置类，用@Import注解导入第三方配置类 ；
+    - 进一步优化，希望在配置文件中配置第三方配置类的类名(而不是写死导入的第三方类)，@Import+自定义类实现ImportSelector 【方法返回值就是配置类的类名形成的数组】接口+SpringFactoriesLoader读取配置文件信息；    
+  -  SpringFactoriesLoader对应配置文件名位置：resources/META-INF/spring.factories   //细节：换行加 \ +回车，类名中内部类的链接符用$而不是.
   - 示例：整合第三方的配置类； @Import+ ImportSelctor接口+SpringFactoriesLoader读取配置文件信息；
     - ![image-20230723164349903](spring原理mac-photos/image-20230723164349903.png)
     - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
-- 自动配置原理
+- 自动配置原理---@Import详解
   - 使用@Import注解，spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置；
   - 例如：要查所有jar保的spring.factories中，key名为EnableAutoConfiguration【自动配置信息】的所有配置类；
     - ![image-20230724222748984](spring原理mac-photos/image-20230724222748984.png)
-  - 特殊情况：同一个bean在三方和本项目都有
-    - spring解析顺序：第三方、本项目；beanFactory默认后注册的Bean==会覆盖==先注册的bean[==springBoot默认不可覆盖==]；
+  - 特殊情况：同一个bean在三方和本项目都有；spring、springboot最后生效的都是本项目的；
+    - spring解析顺序：第三方、本项目；beanFactory默认后注册的Bean==会覆盖==先注册的bean；
     - springBoot：  @Import+ ==DeferredImportSelector接口==+SpringFactoriesLoader读取配置文件信息+==@ConditioanalOnMissingBean==；//还有一个setAllowBeanDefinitionOverring(false)
-      - springboot在不可覆盖的情况下为保证本项目优先级，ImportSelector接口改为DeferredImportSelector【推迟导入接口】，会先解析本项目的配置类；同时为保证不会重复注册报错，需要在三方配置添加注解@ConditioanalOnMissingBean注解，即本项目没有时自动配置类第三方bean才生效；
+      - springboot是==不可覆盖==的，为保证本项目优先级，ImportSelector接口改为DeferredImportSelector【推迟导入三方配置】，故会先解析本项目的配置类；同时为保证不会重复注册报错，需要在三方配置添加注解@ConditioanalOnMissingBean注解，即本项目没有时自动配置类第三方bean才生效；
   - ![image-20230724224402006](spring原理mac-photos/image-20230724224402006.png)
   - ![image-20230724224450182](spring原理mac-photos/image-20230724224450182.png)
   - ![image-20230724224602921](spring原理mac-photos/image-20230724224602921.png)
   - ![image-20230723164330716](spring原理mac-photos/image-20230723164330716.png)
 - 常见的自动配置类学习---AOP   AopAutoConfiguration.class.getName()
-  - 查看自己配置添加类  示例代码：
-    - 第二步会添加常见的后处理器；
+  -  示例代码：引入AOP的自动配置 ：
+    - 只需要在selectImports方法中添加  key: AopAutoConfiguration.class的名字即可
     - 下方红色框内的四个注解是AopAutoConfiguration带来的；
-    - 示例：手工添加键值；
   - ![image-20230724230010394](spring原理mac-photos/image-20230724230010394.png)
   - ![image-20230724230453378](spring原理mac-photos/image-20230724230453378.png)
   - AopAutoConfiguration源码解析
-  
-    - 用了很多注解来实现if else；   @ConditionalOnproperty：条件【配置文件找到对应的键值，并且键值满足对应条件】满足才导入该类，@ConditionalOnClass【类路径下是否存在指定类】等则类似；@ConditionalOnMissingClass【类路径下是否不存在指定类】 matchIfMissing 缺失了也满足；@Conditonal + 实现了Condition接口的类使用，如果覆写的Condition接口的matches返回true则符合条件
+
+    - 默认应该是走两次matchIfMissing = true，第一次引入AopAutoConfiguration，进一步引入AspectJAutoProxyingConfiguration ，第二次进一步引入CglibAutoProxyConfiguration；
+    - 用了很多注解来实现if else；   @ConditionalOnproperty：条件【配置文件找到对应的键值，并且键值满足对应条件】满足才导入该类，@ConditionalOnClass【类路径下是否存在指定类】；@ConditionalOnMissingClass【类路径下是否不存在指定类】 matchIfMissing 缺失了也满足；@Conditonal + 实现了Condition接口的类使用，如果覆写的Condition接口的matches返回true则符合条件
       - https://www.cnblogs.com/cxuanBlog/p/10960575.html
     - ![image-20230730143118404](spring原理mac-photos/image-20230730143118404.png)
     - ![image-20230730142648761](spring原理mac-photos/image-20230730142648761.png)
     - ==ps：这里的默认配置指的是当前测试类，不是spring默认配置了；==
-    - 补充：@EnableAspectJAutoProxy的本质是使用@Import注解进行配置导入，导入的一个自动代理创建器，实现接口ImportBeanDefinitionRegistrar：编程的方式[registerAspectJAnnotationAutoProxyCreatorIfNecessary]把bean的beanDefinition加入到容器，最终添加的AnnotationAwareAspectJAutoProxyCreator.class[创建代理对象的]；
+    - 补充：@EnableAspectJAutoProxy：加入自动代理创建器 
+      - Enable打头的注解，本质上都是使用@Import注解进行配置导入
+      - 配合@Import使用的配置类，实现了接口ImportBeanDefinitionRegistrar，该接口和ImportSelector接口是一个系列的，不同的是要重写的方法为registerBeanDefinitions，功能是编程的方式把bean的beanDefinition加入到容器，最终添加的AnnotationAwareAspectJAutoProxyCreator.class[bean后处理器，解析@Aspect等相关注解并创建代理对象的]；
       - proxyTargetClass属性说明：为false，目标实现接口采用jdk，没有实现接口采用cglib；为true，统一采用cglib
-    - 看一眼容器的代理配置
-      - ![image-20230730143413469](spring原理mac-photos/image-20230730143413469.png)
+      - 查看容器的代理配置
+        - ![image-20230730143413469](spring原理mac-photos/image-20230730143413469.png)
 - 常见的自动配置类 ---DataSource  Mybatis  事务  MVC
   - 添加示例 测试代码：
     - ![image-20230730151116160](spring原理mac-photos/image-20230730151116160.png)
     - ![image-20230730151045527](spring原理mac-photos/image-20230730151045527.png)
     - ![image-20230730153351805](spring原理mac-photos/image-20230730153351805.png)
-  - 自动配置——dataSource;  DataSourceAutoConfiguration
-    - DataSourceBean的配置需要 数据库url 用户名 密码等；
-    - DataSourceAutoConfiguration会选择哪个实现类？
-      - 看代码条件可以知道，一般会是HikariDatSource 
-      - 是否有基于连接池的数据源：一般有HikariDatasource； mybatis jar包，下面 有jdbc jar包，下面有Hikari；
+  - 自动配置——dataSource
+    - 核心类：DataSourceAutoConfiguration
+      - 看注解中条件可以知道，一般情况下因为没有内嵌数据库，但是有PooledDataSourceCondition(因为JDBC的Hakari数据库属于基于连接池的数据库)，所以生效的是DataSourceConfiguration.Hikari.class
+      - 进一步因为  JDBC有HikariDatasource，故会注入Hikari的dataSource
+      - ![image-20231119205007822](spring原理mac19-photos/image-20231119205007822.png)
       - ![image-20230730152957909](spring原理mac-photos/image-20230730152957909.png)
       - ![image-20230730151724369](spring原理mac-photos/image-20230730151724369.png)
-    - DataSource获取url等配置信息
-      - @EnableConfigurationProperties会注册bean后处理器以支持绑定，属性为 DataSourceProperties.class表示会new一个该对象，并会绑定键值信息——以spring.datasource打头键值绑定到上面创建的对象； //在创建dataSource的时候会用到；
+    - 自动注入的DataSource获取url等配置信息
+      - @EnableConfigurationProperties：注解中属性为 DataSourceProperties.class表示会new一个该对象，并会绑定键值信息——以spring.datasource打头键值绑定到上面创建的对象； //在创建dataSource的时候会用到；如果已经有 DataSourceProperties对象注册bean后处理器以支持绑定？？？
       - ![image-20230730152325700](spring原理mac-photos/image-20230730152325700.png)
-      - @Bean注解的方法是工厂方法，入参可以自动去容器中依据类型getBean
       - ![image-20230730152737350](spring原理mac-photos/image-20230730152737350.png)
-  -  自动配置——Mybatis
-    - SqlSessinFactory.class   SqlSessionFactoryBean.class 这两个类在Mybatis的jar包中有；
-    - @AutoConfigureAfter表明了bean注入的先后顺序， mybatis的sqlSession需要DataSource
-    - MbatisAutoConfiguration会选择哪个实现类？或者提供哪些bean?
-      - 有SqlSessionFactory   SqlSessionTemplate  MapperScannerRegistrarNotFoundConfiguration
-      - ![image-20230730160957368](spring原理mac-photos/image-20230730160957368.png)
-      - SqlSessionTemplate[spring mybatis整合要用的]是sqlSession的一个实现类，而且实现了线程绑定，即一个线程共用一个SqlSession;
+  - 自动配置——Mybatis
+    - 核心： MybatisAutoConfiguration，会自动注入 SqlSessinFactory.class   SqlSessionTemplate  MapperScannerRegistrarNotFoundConfiguration等；
+      - @AutoConfigureAfter表明了bean注入的先后顺序(看名字就可以推测在某bean之后注入)， mybatis 的 sqlSession 需要 DataSource
+      - SqlSessionTemplate：实现了SqlSession，可以生成一个线程绑定的bean，即一个线程共用一个SqlSession;
         - mapper由MapperFactoryBean生产，里面的getObject  生成mapper对象用的sqlSession就是SqlSessionTemplate；
+      - MapperScannerRegistrarNotFoundConfiguration，会 导入  AtuoConfiguredMapperScannerRegistrar； 
+        - AutoConfigMapperScannerRegistrar会依据mapper接口类型，将mapper接口[带有@Mapper注解的接口]封装成MapperFactoryBean.class，然后作为beanDefinition加入beanFactory; //使用时要指定包名；
+          - AutoConfigurationPackages[register的第二个入参]，用来确定扫描范围；//通常是引导类的包名
+      - @EnbaleConfigurationProperties(MybatisProperties.class)会创建MybatisProperties对象，并绑定键值信息——以mybatis打头；(详情参考前面章节改注解的底层原理解析)
+      - ![image-20230730160957368](spring原理mac-photos/image-20230730160957368.png)
       - ![image-20230730164030954](spring原理mac-photos/image-20230730164030954.png)
       - ![image-20230730164342670](spring原理mac-photos/image-20230730164342670.png)
-      - AutoConfigMapperScannerRegistrar会依据mapper接口类型，将mapper接口[带有@Mapper注解的接口]封装成MapperFactoryBean.class，然后作为beanDefinition加入beanFactory;
-        - 使用时要指定包名；
-        - AutoConfigurationPackages可以用来记录引导类的包名[register的第二个入参]，后面用来确定扫描范围；
-        - ![image-20230730170207529](spring原理mac-photos/image-20230730170207529.png)
-    - 如何获取Mybatis创建bean需要的配置信息？
-      - @EnbaleConfigurationProperties(MybatisProperties.class)会创建MybatisProperties对象，并绑定键值信息——以mybatis打头；
-    - 题外话：@SpringBoot注解
-      - @AutoConfigurationPackage：导入自动配置；里面的@AutoConfigurationPackage注解就会记录前面提到的引导类的包名；
+      - ![image-20230730170207529](spring原理mac-photos/image-20230730170207529.png)
+    - 题外话：@SpringBootApplication注解
+      - @EnableAutoConfiguration导入自动配置，也是个组合注解
+        - @AutoConfigurationPackage：[register的第二个入参]，用来确定扫描范围，是前面记录的引导类的包名；
       - @Component：组件扫描，@Component @Service @Controller  ;
       - @SpringBootConfiguration表明这是个配置类；
-  -  自动配置——DataSourceTransactionManagerAutoConfiguration[事务管理器]、TransactionAutoConfiguration[事务的三大组件：切面 切点 通知]   //了解即可
-    - MbatisAutoConfiguration会选择哪个实现类？或者提供哪些bean?
-      - transactionManager[事务管理器]、transactionAdvisor[切面：切点+通知]、transactionAttributeSource[切点]、transactionInterceptor[环绕通知];   剩下几个略，不大重要；
+  -  事务的自动配置——DataSourceTransactionManagerAutoConfiguration、ProxyTransactionManagementConfiguration
+    - DataSourceTransactionManagerAutoConfiguration 
+      - 会注入 transactionManager[事务管理器]、
+    - ProxyTransactionManagementConfiguration
+      - 会注入   transactionAdvisor[切面：切点+通知]、transactionAttributeSource[切点]、transactionInterceptor[环绕通知];  
+    - 剩下几个略，不大重要；
     - ![image-20230730171945529](spring原理mac-photos/image-20230730171945529.png)
     - ![image-20230730172328983](spring原理mac-photos/image-20230730172328983.png)
-  - 自动配置——MVC  (了解就好）
+  - 自动配置——MVC相关  (了解就好）
+    - 图中四个key对应的功能：配置内嵌tomcat服务器工厂、配置dispatcherServlet、dispatcherServlet运行时需要的组件（处理器映射器、适配器等）、error的处理（basicErrorContorller）
+    - 关键类：
+      - tomcatServletWebServerFactory :  内嵌的tomcat
+      - dispatcherServlet：里面用了WebMvcProperties.class用来绑定springMVC打头的键值
+      - diapatcherServletRegistrationConfiguration : 注册用的bean
+      - 其它相对重要的还有：Adapter结尾的、mapping结尾的、带有exception的、basicErrorController
     - ![image-20230731223629435](spring原理mac-photos/image-20230731223629435.png)
     - ![image-20230731223452546](spring原理mac-photos/image-20230731223452546.png)
-    - 四个自动配置类  会选择哪个实现类？或者提供哪些bean?
-      - tomcatServletWebServerFactory :  内嵌的tomcat
-        - ![image-20230731222817660](spring原理mac-photos/image-20230731222817660.png)
-      - ​    dispatcherServlet:里面用了WebMvcProperties.class用来绑定springMVC打头的键值
-        - ![image-20230731223031391](spring原理mac-photos/image-20230731223031391.png)
-      - diapatcherServletRegistration : 注册用的bean
-      - 其它相对重要的还有：Adapter结尾的、mapping结尾的、带有exception的、basicErrorController
-- spring自动配置原理解析
-  - @EnableAutoCOnfiguration中使用@Import注解，导入相关配置；接下来的内容和前面学的自动配置原理一致，在selectImports方法中，从springFactory中读取指定的key对应的配置类列表，注册到spring容器，不同的是这里的key用的是EnableAutoConfiguration.class；
+    - ![image-20230731222817660](spring原理mac-photos/image-20230731222817660.png)
+    - ![image-20230731223031391](spring原理mac-photos/image-20230731223031391.png)
+- 让自定义的自动配置能被spring识别
+  - spring自动配置原理解析    ：@EnableAutoConfiguration中使用@Import注解，导入相关配置；接下来的内容和前面学的自动配置原理一致，在selectImports方法中，从springFactory中读取指定的key对应的配置类列表，注册到spring容器，不同的是这里的key用的是EnableAutoConfiguration.class；
+  - 只要在自己项目中的spirngFactories 中把 自定义配置的key指定为EnableAutoConfiguration.class即可
   - ![image-20230801200623628](spring原理mac-photos/image-20230801200623628.png)
   - ![image-20230801201547845](spring原理mac-photos/image-20230801201547845.png)
+  - ![image-20231119170405389](spring原理mac19-photos/image-20231119170405389.png)
+  - ![image-20231119170457648](spring原理mac19-photos/image-20231119170457648.png)
 
 
 ### 第42讲：条件装配底层

@@ -8,6 +8,8 @@
 
 https://www.bilibili.com/video/BV1P44y1N7QG/?vd_source=8bd5ab544d4cb8d9821752b68ce53b11
 
+梳理的时候多思考？面试的话哪些问题可以提取？   学的内容在自己日常该做中是不是可以有应用？
+
 #### 问题小结：
 
 - jdk代理的原理？如何自己实现代理？Cglib?? 代理的模拟实现自己手写下？？
