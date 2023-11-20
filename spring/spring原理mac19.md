@@ -791,28 +791,36 @@ RequestMappingHandlerAdapter
 - ==spring单例池中==只存代理对象，不存目标对象；要获取目标对象，需要先转换为Adivised接口并调用方法获取；
   - ![image-20231116200405806](spring原理mac19-photos/image-20231116200405806.png)
 
-### 第四十六讲 @Value注入底层（结合第四讲学习）
+### 第46讲 @Value注入底层（结合第四讲学习）
 
-- @Value注解的解析，表达式中 占位符的解析
+- 场景：Bean1中成员变量上@Value 解析
+- 获取原始值+解析${}
   - resolver.getSuggestedValue获取@Value注解中的内容； 入参：成员变量[或成员方法]的描述、变量是否是必须的；
-  - environment().resolvePlaceholders(value) 解析
-  - ![image-20230806171543094](spring原理mac-photos/image-20230806171543094.png)
-- age除了 解析，还需要多一步类型转换，因为解析的结果是字符串
+  - context.getEnvironment().resolvePlaceholders(value) 解析${}
+  - ![image-20231120190042082](spring原理mac19-photos/image-20231120190042082.png)
+  - ![image-20231120190314182](spring原理mac19-photos/image-20231120190314182.png)
+- 类型转换
+  - age除了 解析，还需要多一步类型转换（string转int） getTypeConverter().getTypeConvertIfNecessary() ，入参：要转换的内容   要转换的目标类型；
   - ![image-20230806172112314](spring原理mac-photos/image-20230806172112314.png)
-- 表达式中为spring EL表达式，即#打头； 要用getbeanExpressionResulver().evaluate，入参： 原始值，expressionContext，null；
+- @Value实现依赖注入，即解析#{} //springEL
+  -  要用getbeanExpressionResulver().evaluate() 解析#{}，入参： 原始值，expressionContext，null；
   - ![image-20230806211847852](spring原理mac-photos/image-20230806211847852.png)
   - ![image-20230806211855504](spring原理mac-photos/image-20230806211855504.png)
-- 同时包含${}    #{}
-  - 函数用上面的test3即可；
+- 复杂情况：同时包含${}    #{}
+  - 函数用上面的test3即可，先解析${}，再解析#{}
   - ![image-20230806212414140](spring原理mac-photos/image-20230806212414140.png)
 
 ### 第四十七讲：@Autowired注入底层（结合第四讲学习）
 
-- 示例代码
-  - ![image-20230806212640414](spring原理mac-photos/image-20230806212640414.png)
+- @Autowired四种用法：依据成员变量的类型注入；依据参数的类型注入；结果包装为Optional<Bean2>； 结果包装为ObjectProvider、ObjectFactory； 配合@Lazy的情况；P163  07:40
+  - 最终都是调用doResolveDependency()方法； 场景3 需要获取内层类型，故要调用  increaseNestingLevel()，最后还需要封装一层；场景4 也需要获取内层类型，也要加封装，但是封装为工厂，真正的注入可以在工厂的getObject()方法中实现，达到延迟注入的目的（不是注入bean1的同时就注入，而是在调用bean4的getObject方法才注入）
+  - //dependencyDescriptor可以描述成员变量 或者 方法参数
+  - ![image-20231120194920554](spring原理mac19-photos/image-20231120194920554.png)
+  - ![image-20231120195707032](spring原理mac19-photos/image-20231120195707032.png)
+  - ![image-20231120200317349](spring原理mac19-photos/image-20231120200317349.png)
   - ![image-20230806212653927](spring原理mac-photos/image-20230806212653927.png)
 - 获取依赖的四种情况， 属性、方法参数
-  - 方法参数的descriptor还要指定方法的哪个参数；==dependencyDescriptor用来描述内嵌的类型，increaseNestingLevel；如场景3 4==
+  - ==dependencyDescriptor用来描述内嵌的类型，increaseNestingLevel；如场景3 4==
   - doResolveDependency [去容器中找依赖的对象实例]入参：descriptor[成员变量还是成员方法] beanName null
   - ![image-20230806214704298](spring原理mac-photos/image-20230806214704298.png)
   - ![image-20230806215608029](spring原理mac-photos/image-20230806215608029.png)
@@ -821,7 +829,6 @@ RequestMappingHandlerAdapter
 - @Lazy  创建一个代理对象，当真正调用目标对象方法时，才初始化目标对象，类似FactoryBean
   - 使用了@Lazy，就不推荐直接用doResolveDependency 取目标对象了，可以用getLazyResolutionProxyIfNecessary   [有@Lazy注解会创建代理]
   - ![image-20230806220449941](spring原理mac-photos/image-20230806220449941.png)
-
 - doResolveDependency原理解析
   - @Autowired  @Value最终都会调用doResolveDependency；
   - 解析依赖数组
