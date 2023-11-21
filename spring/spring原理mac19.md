@@ -810,51 +810,50 @@ RequestMappingHandlerAdapter
   - 函数用上面的test3即可，先解析${}，再解析#{}
   - ![image-20230806212414140](spring原理mac-photos/image-20230806212414140.png)
 
-### 第四十七讲：@Autowired注入底层（结合第四讲学习）
+### 第四十七讲：@Autowired注入底层（结合第四讲学习）//课程看完了，还没写思维导图
 
-- @Autowired四种用法：依据成员变量的类型注入；依据参数的类型注入；结果包装为Optional<Bean2>； 结果包装为ObjectProvider、ObjectFactory； 配合@Lazy的情况；P163  07:40
+- @Autowired四种用法：依据成员变量的类型注入；依据参数的类型注入；结果包装为Optional<Bean2>； 结果包装为ObjectProvider、ObjectFactory； 
   - 最终都是调用doResolveDependency()方法； 场景3 需要获取内层类型，故要调用  increaseNestingLevel()，最后还需要封装一层；场景4 也需要获取内层类型，也要加封装，但是封装为工厂，真正的注入可以在工厂的getObject()方法中实现，达到延迟注入的目的（不是注入bean1的同时就注入，而是在调用bean4的getObject方法才注入）
   - //dependencyDescriptor可以描述成员变量 或者 方法参数
+- 配合@Lazy的情况：@Lazy可以加成员变量或者方法参数，作用是 会创建代理对象，访问对象方法时才会创建目标对象，达到延迟注入的效果；  
+  - 最终调用的是 ContextAnnotationAutowireCandidateResolver.getLazyResolutionProxyIfNecessary()
   - ![image-20231120194920554](spring原理mac19-photos/image-20231120194920554.png)
   - ![image-20231120195707032](spring原理mac19-photos/image-20231120195707032.png)
   - ![image-20231120200317349](spring原理mac19-photos/image-20231120200317349.png)
+  - ![image-20231121091042702](spring原理mac19-photos/image-20231121091042702.png)
   - ![image-20230806212653927](spring原理mac-photos/image-20230806212653927.png)
-- 获取依赖的四种情况， 属性、方法参数
-  - ==dependencyDescriptor用来描述内嵌的类型，increaseNestingLevel；如场景3 4==
-  - doResolveDependency [去容器中找依赖的对象实例]入参：descriptor[成员变量还是成员方法] beanName null
-  - ![image-20230806214704298](spring原理mac-photos/image-20230806214704298.png)
-  - ![image-20230806215608029](spring原理mac-photos/image-20230806215608029.png)
-  - ObjectFactory和Optional的不同，objectFactory在有人调用getObject时才会去容器中找 产品对象，即有推迟初始化；故这里在工厂内部解析依赖
-    - ![image-20230806215637550](spring原理mac-photos/image-20230806215637550.png)
-- @Lazy  创建一个代理对象，当真正调用目标对象方法时，才初始化目标对象，类似FactoryBean
-  - 使用了@Lazy，就不推荐直接用doResolveDependency 取目标对象了，可以用getLazyResolutionProxyIfNecessary   [有@Lazy注解会创建代理]
-  - ![image-20230806220449941](spring原理mac-photos/image-20230806220449941.png)
 - doResolveDependency原理解析
-  - @Autowired  @Value最终都会调用doResolveDependency；
+  - 场景Service1 2 3分别实现了Service接口； Dao1 2分别实现了Dao<T> 
+  - @Autowired  @Value解析依赖最终都会调用doResolveDependency；
   - 解析依赖数组
+    - dd1.getDependencyType().getComponentType()获取数组元素类型
+    - BeanFactoryUtils.beannamesForTypeIncludingAncestors()：查找当前容器及其祖先容器中所有类型为type的对象的beanName；
+    - 最后调用beanFactory.getBean() 或者  dd1.resolverCandidaete() 并封装为数组//底层都是beanFactory.getBean()
     - ![image-20230807194224969](spring原理mac-photos/image-20230807194224969.png)
-    - beannamesForTypeIncludingAncestors：查找当前容器及其祖先容器中所有类型为type的对象的beanName；
   - 解析依赖的List
-    - 和数组类似，但是这里获取元素类型改用 getResolvableType().getGeneric()  不指定第几个泛型参数默认第一个；
+    - 和数组类似，但是这里获取元素类型改用 getResolvableType().getGeneric().resolve() 不指定第几个泛型参数默认第一个；
     - ![image-20230807204756673](spring原理mac-photos/image-20230807204756673.png)
   - 解析依赖的特殊类型：如ApplicationContext的子接口，还有下图红圈的四个类型
-    - 最终的成品的bean其实放在DefaultListableBeanFactory的父类DefaultSingletonBeanRegistry类的属性singletonObjects中，但特殊的类型放在resoleableDependencies   key为类型，value为特殊对象；在调用ApplicationContext的Refresh方法时添加
+    - 一般容器中的bean位置：DefaultListableBeanFactory的父类DefaultSingletonBeanRegistry类的属性singletonObjects中，key为beanName，值为实例对象；
+    - 有些特殊的类型不是容器中的bean，特殊的类型放在DefaultListableBeanFactory的属性resoleableDependencies   key为类型（对象类型或接口类型），value为特殊对象；//在调用ApplicationContext的Refresh方法时添加；
+    - 特殊类型无法通过getBean方法获取，可以反射获取
+      - isAssignableFrom()，右边的值是否能赋值给左边的值
     - ![image-20230807205600043](spring原理mac-photos/image-20230807205600043.png)
-    - 下面红圈多了一个key是否为指定类型的子类的判断：
     - ![image-20230807210109667](spring原理mac-photos/image-20230807210109667.png)
     - ![image-20230807210046844](spring原理mac-photos/image-20230807210046844.png)
-  - 解析依赖的特殊类型：实现了接口且接口包含泛型信息，要精准定位到泛型对对应的类，如这里想精确定位到Dao<Teacher>；
-    - getMergedBeanDefinition获取bd包含泛型信息[dd4中也有泛型信息]，resolver的isAutowreCandidate方法对比泛型信息是否匹配
+  - 解析 ：注入的对象实现了含有泛型的接口，要精准定位到泛型对对应的类，如这里想精确定位到Dao<Teacher>；
+    - getMergedBeanDefinition  获取bd包含类和泛型信息[dd4中也有泛型信息]，resolver的isAutowreCandidate方法对比bd和dd4的泛型信息是否匹配 //这里dd4对应的dao属性没有@Qualifier，所以会默认省略对比  bean的名字；具体可以参考下面一种情况；
     - ![image-20230813150810014](spring原理mac-photos/image-20230813150810014.png)
     - ![image-20230813150918161](spring原理mac-photos/image-20230813150918161.png)
   - 解析依赖：依据Qualifier名字匹配，检查Qualifier名字和@Component中名字是否一致；适用一个接口有多个实现类时的精确定位，如这里要精确定位到Service2；
-    - resolver的isAutowreCandidate方法解析@Qualifier注解，对比 名字和dd5中是否一致；
+    - 底层使用的两个核心方法和上面的情况完全一致，resolver的isAutowireCandidate方法解析dd5中 @Qualifier注解 指定的名字，对比 名字和dd5中是否一致；
     - ![image-20230813154454276](spring原理mac-photos/image-20230813154454276.png)
     - ![image-20230813154538456](spring原理mac-photos/image-20230813154538456.png)
     - ![image-20230813154553773](spring原理mac-photos/image-20230813154553773.png)
-  - 解析依赖：包含@Primary注解，和@Qualifier类似，解决一个接口多个实现类的精确定位问题
+  - 解析依赖：一个接口多个实现类的情况，包含@Primary注解//和@Qualifier类似，解决一个接口多个实现类的精确定位问题 
+    - beanDefinition有一个成员变量标记了是否为Primary对象，bd.isPrimary()可以获取该变量；
     - ![image-20230813155418141](spring原理mac-photos/image-20230813155418141.png)
-  - 解析依赖：如果没有@qualifier  @Primary  会优先选择和变量名匹配的，优先级@qualifier>  @Primary > 成员变量名字
+  - 解析依赖：一个接口多个实现类的情况，如果同时没有@qualifier  @Primary  ，会优先选择和变量名匹配的 如下面的情况会注入service3对象，优先级@qualifier>  @Primary > 成员变量名字
     - ![image-20230813155653419](spring原理mac-photos/image-20230813155653419.png)
 
 ### 第四十八讲：事件-监听器
