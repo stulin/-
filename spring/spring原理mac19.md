@@ -810,7 +810,7 @@ RequestMappingHandlerAdapter
   - 函数用上面的test3即可，先解析${}，再解析#{}
   - ![image-20230806212414140](spring原理mac-photos/image-20230806212414140.png)
 
-### 第四十七讲：@Autowired注入底层（结合第四讲学习）//课程看完了，还没写思维导图
+### 第47讲：@Autowired注入底层（结合第四讲学习）
 
 - @Autowired四种用法：依据成员变量的类型注入；依据参数的类型注入；结果包装为Optional<Bean2>； 结果包装为ObjectProvider、ObjectFactory； 
   - 最终都是调用doResolveDependency()方法； 场景3 需要获取内层类型，故要调用  increaseNestingLevel()，最后还需要封装一层；场景4 也需要获取内层类型，也要加封装，但是封装为工厂，真正的注入可以在工厂的getObject()方法中实现，达到延迟注入的目的（不是注入bean1的同时就注入，而是在调用bean4的getObject方法才注入）
@@ -822,7 +822,7 @@ RequestMappingHandlerAdapter
   - ![image-20231120200317349](spring原理mac19-photos/image-20231120200317349.png)
   - ![image-20231121091042702](spring原理mac19-photos/image-20231121091042702.png)
   - ![image-20230806212653927](spring原理mac-photos/image-20230806212653927.png)
-- doResolveDependency原理解析
+- doResolveDependency解析原理
   - 场景Service1 2 3分别实现了Service接口； Dao1 2分别实现了Dao<T> 
   - @Autowired  @Value解析依赖最终都会调用doResolveDependency；
   - 解析依赖数组
