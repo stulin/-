@@ -1,3 +1,7 @@
+看看前面的flink自己做了哪些总结？ 过于设计模式，不要死记硬背，用到的时候去查对应的，详细学习，并总结一个简单的示例，作为自己的笔记      //找本大话设计模式电子书   
+
+//想花个一个月时间，好好梳理下自己的技术栈，正好借着过年的这个时间；
+
 ==找个时间把课程的主线梳理下，然后梳理一般面试用 或者说 知识点框架 的极简思维导图，如RequestMappingHandlerAdapter包含了参数解析器，引出了二十一讲有哪些参数解析器及底层原理；==
 
 有哪些设计、思想，在自己平时的业务代码中可以应用？
@@ -882,22 +886,34 @@ RequestMappingHandlerAdapter
   - ![image-20230815124413881](spring原理mac-photos/image-20230815124413881.png)
   - ![image-20230815124352494](spring原理mac-photos/image-20230815124352494.png)
 
-### 第四十九讲：实现一个事件发布器
+### 第49讲：实现一个事件发布器
 
 - 需要实现  接口：ApplicationEventMulticaster ，这里用一个抽象类作为中介，抽象类实现所有方法，但是方法体都为空；
-- 我们只实现两个方法即可：收集监听器，发布事件；如何触发Listener的回调，只需要调用listener.onAPplicationEcent()方法即可
-  - ![image-20230815194442382](spring原理mac-photos/image-20230815194442382.png)
-  - addApplicationListenerBean 入参可以获取到listener的beanName，大概率是因为回调的逻辑是优先回调实现类；
-- 发布事件前要判断下，当前的事件和监听器  发布接口的入参是否匹配，不匹配的话强制调用会出错
-  - GenericApplicationListener：是ApplicationListener的子接口，有一个supportEvent方法；
-  - ![image-20230815200157502](spring原理mac-photos/image-20230815200157502.png)
-  - ![image-20230815200016750](spring原理mac-photos/image-20230815200016750.png)
-  - 改进：多线程发布
-    - 发布时以多线程发布即可
-    - ![image-20230815201138478](spring原理mac-photos/image-20230815201138478.png)
-    - ![image-20230815201225215](spring原理mac-photos/image-20230815201225215.png)
 
-摇手机  棉球 洗衣服 快递；  ==宁波那边是否提供一份初始化要查的数据列表，方便投产验证；==
+- 我们只实现两个方法即可：收集所有监听器、发布（广播）事件；
+  
+  - 如何触发Listener的回调，只需要调用listener.onApplicationEcent()方法即可
+  - addApplicationListenerBean 入参可以获取到listener的beanName，大概率是因为监听器是（回调方法的）外层方法的入参；
+  
+- 进一步优化：发布事件前要判断下，当前的事件类型 和 监听器监听的事件类型  是否匹配，不匹配的话强制反射调用会出错；
+
+  - 收集事件监听器 时要将事件封装为GenericApplicationListener
+  - GenericApplicationListener：是ApplicationListener的子接口，可以重写supportEventType方法方法判断 当前的event是否匹配  listener监听的事件；
+
+  - //ResolvableType.forClass 可以解析类型，getInterfaces()获取所有的接口，getGeneric()获取接口的泛型信息； ResolvableType.isAssignableFrom
+
+- 改进：多线程发布
+
+  - 发布时以多线程发布即可  ThreadPoolTaskExecutor.submit
+
+  - ![image-20230815194442382](spring原理mac-photos/image-20230815194442382.png)
+
+- ![image-20230815200157502](spring原理mac-photos/image-20230815200157502.png)
+
+  - ![image-20230815200016750](spring原理mac-photos/image-20230815200016750.png)
+
+- ![image-20230815201138478](spring原理mac-photos/image-20230815201138478.png)
+  - ![image-20230815201225215](spring原理mac-photos/image-20230815201225215.png)
 
 #### ==//后面补充学习下spring事务的递归回滚==； https全套； 编码方式，刚好看到一篇文章；Spring自动配置原理的梳理？比如从springFactory中读取配置开始说起；
 
