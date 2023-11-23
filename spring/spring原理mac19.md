@@ -856,36 +856,39 @@ RequestMappingHandlerAdapter
   - 解析依赖：一个接口多个实现类的情况，如果同时没有@qualifier  @Primary  ，会优先选择和变量名匹配的 如下面的情况会注入service3对象，优先级@qualifier>  @Primary > 成员变量名字
     - ![image-20230813155653419](spring原理mac-photos/image-20230813155653419.png)
 
-### 第四十八讲：事件-监听器
+### 第48讲：事件-监听器
 
-- 常用于 业务代码的解耦；
-- 例：主线业务  与 发送短信  发送邮件 解耦；使用ApplicationListener监听；
+- 应用：常用于 业务代码的解耦；
+- 例——实现接口写法：主线业务  与 发送短信  发送邮件 解耦；使用ApplicationListener监听；
+  - 完成主线业务后，发布一个MyEvent (继承ApplicationEvent)事件
+  - 创建两个监听器，实现 ApplicationListener<MyEvent>  接口，监听到事件后会回调onApplicationEvent方法；
+  - ![image-20231123160847389](spring原理mac19-photos/image-20231123160847389.png)
   - ![image-20230813162602383](spring原理mac-photos/image-20230813162602383.png)
   - ![image-20230813162529110](spring原理mac-photos/image-20230813162529110.png)
   - ![image-20230813162513973](spring原理mac-photos/image-20230813162513973.png)
-- 使用@EventListener监听  + 异步处理
-  - SimpleApplicationEvenMulticaster可以在线程池发布事件，即多线程发布
-  - ApplicationEventPublisher底层用了applicationEventMulticaster  bean发布事件，默认单线程；自定义多线程发布的  bean的名字必须叫applicationEventMulticaster
+- 例——注解写法：使用@EventListener监听  + 异步处理
+  - ApplicationEventPublisher底层用了SimpleApplicationEventMulticaster  bean发布事件，默认单线程(不用线程池)；也可以在线程池发布事件，即多线程发布
+  - 多线程发布：只需要注入一个bean，  bean的类型必须为ApplicationEventMulticaster及其实现，名字为 applicationEventMulticaster
   - ![image-20230813164144368](spring原理mac-photos/image-20230813164144368.png)
   - ![image-20230813164120530](spring原理mac-photos/image-20230813164120530.png)
-  - ![image-20230813164321895](spring原理mac-photos/image-20230813164321895.png)
+  - ![image-20231123162034775](spring原理mac19-photos/image-20231123162034775.png)
 - @EventListener原理
-  - 本质还是借助ApplicationListener实现； context找到带有@EventListener注解的所有方法，创建ApplicationListener对象[内部反射调用业务代码相关方法]，并将生成的ApplicationListener添加到context中；    本质上：这里创建ApplicationListener时一个适配器模式的应用；
+  - 本质还是借助ApplicationListener实现； context找到带有@EventListener注解的所有方法，创建ApplicationListener对象[内部反射调用业务代码相关方法]，并将生成的ApplicationListener添加到context中；    ==本质上：这里创建ApplicationListener是一个适配器模式的应用；==
+  - 优化  增加的监听事件类型的校验：接受到自定义的MyEvnet事件才反射调用，不对其它的事件[如容器关闭]做出错误反应；
+  - 扩展  对所有的bean作此操作：只需要配合 context 的 getBeanDefinitionNames()  +  getBean()；扩展介绍接口：SmartInitializingSingleton的afterSingletonsInstantiated，会在所有单例初始化后回调，在refresh()中执行；
   - ![image-20230813171125057](spring原理mac-photos/image-20230813171125057.png)
   - ![image-20230813171207931](spring原理mac-photos/image-20230813171207931.png)
-  - 优化：接受到自定义的MyEvnet事件才反射调用，不对其它的事件[如容器关闭]做出错误反应；
-    - ![image-20230815123536346](spring原理mac-photos/image-20230815123536346.png)
-  - 扩展：对所有的bean作此操作；同时添加监听器的代码封装为一个方法，使用接口：SmartInitializingSingleton，会在所有单例初始化时被回调，在refresh中执行；
-    - ![image-20230815124413881](spring原理mac-photos/image-20230815124413881.png)
-    - ![image-20230815124352494](spring原理mac-photos/image-20230815124352494.png)
+  - ![image-20230815123536346](spring原理mac-photos/image-20230815123536346.png)
+  - ![image-20230815124413881](spring原理mac-photos/image-20230815124413881.png)
+  - ![image-20230815124352494](spring原理mac-photos/image-20230815124352494.png)
 
-#### 第四十九讲：实现一个事件发布器
+### 第四十九讲：实现一个事件发布器
 
 - 需要实现  接口：ApplicationEventMulticaster ，这里用一个抽象类作为中介，抽象类实现所有方法，但是方法体都为空；
 - 我们只实现两个方法即可：收集监听器，发布事件；如何触发Listener的回调，只需要调用listener.onAPplicationEcent()方法即可
   - ![image-20230815194442382](spring原理mac-photos/image-20230815194442382.png)
   - addApplicationListenerBean 入参可以获取到listener的beanName，大概率是因为回调的逻辑是优先回调实现类；
-- 发布事件钱要判断下，当前的事件和监听器  发布接口的入参是否匹配，不匹配的话强制调用会出错
+- 发布事件前要判断下，当前的事件和监听器  发布接口的入参是否匹配，不匹配的话强制调用会出错
   - GenericApplicationListener：是ApplicationListener的子接口，有一个supportEvent方法；
   - ![image-20230815200157502](spring原理mac-photos/image-20230815200157502.png)
   - ![image-20230815200016750](spring原理mac-photos/image-20230815200016750.png)
