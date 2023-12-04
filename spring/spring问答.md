@@ -52,6 +52,12 @@
     - beanFactory只能管理对象，要添加接口则需要接口转对象——即用MapperFactoryBean<T>封装，并指定sqlSessionFactory即可；
     - beanName获取要注意下，获取接口的beanName不是类的；
     - //setAutowiredMode 设置了自动装配模式后，factory会自动去工厂中找sqlSessionFactory并装配；
+- Aware接口、InitialzingBean接口有什么用？什么情况下只能用Aware接口、InitialzingBean接口而不能用@Autowired、@PostConstruct？或者说什么情况下@Autowired、@PostConstruct两个注解会失效？
+  - 接口功能
+    - aware接口：bean名字注入、BeanFactory注入、ApplicationContext容器注入、解析${}等；
+    - InitializingBean接口：为bean添加初始化方法；
+  - @Autowired、@PostConstruct注解失效的场景：在配置类中存在BeanFactoryPostProcessor的情况，注解失效，只能用上述两个接口
+    - 失效原因：注解@Autowired、@PostConstruct依赖容器的后处理器；正常情况下，容器会依次执行  BeanFacotryPostProcessor、BeanPostProcessor、java配置类（java配置类中可能包含@Autowired注解），注解正常解析；但是在配置类中存在BeanFactoryPostProcessor的情况，配置类背提前创建(因为要创建BeanFactoryPostProcessor的缘故)，此时后处理器未准备好，故注解失效；
 - 容器、注解、后处理器梳理
   - 容器： GenericApplicationContext相比AnnotationConfigApplicationContext  ，很干净，没添加bean后处理器等；refresh()方法会执行工厂后处理器 初始化单例等；
   - bean后处理器及对应注解
