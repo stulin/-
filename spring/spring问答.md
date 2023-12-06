@@ -86,10 +86,11 @@
 
   - AOP的实现方式有哪几种？各有什么优缺点？ //关联题：动态代理的原理
 
-      - jdk代理：自己编写代理类增强；java自带；代理类没有源码，运行时直接生成字节码；只能针对实现了接口的类代理  //导图中有示例代码：
-      - cglib代理：自己编写代理类增强；cglib是第三方的库，目标类和代理类是父子关系，可以相互强转，且目标类不能是final；父类方法加了final也不能被增强，代理类需要重写被代理方法
+      - jdk代理：自己编写代理类增强；java自带；代理类没有源码，运行时直接生成字节码；只能针对实现了接口的类代理  //思维导图中有示例代码：
+      - cglib代理：自己编写代理类增强；cglib是第三方的库代理类没有源码，，运行时直接生成字节码；目标类和代理类是父子关系，目标类不能是final，父类方法加了final也不能被增强，代理类需要重写被代理方法；
       - aspectj：借助apectj插件进行增强；编译时改写class实现增强，可以增强静态方法[代理不能增强静态方法]   
-      - agent：类启动时增加VM options: -javaagent；类加载阶段修改class实现增强，可以突破代理实现aop的限制：一个方法调用另一个方法，被调用的方法无法增强(因为另一个方法会通过this调用，不走代理)； //推荐工具 Arthas工具，实现运行时的反编译
+      - agent：类启动时增加VM options: -javaagent；类加载阶段修改class实现增强，可以突破代理实现aop的限制：一个方法调用另一个方法，被调用的方法无法增强(因为另一个方法会通过this调用，不走代理)； //推荐工具 Arthas工具，实现运行时的反编译补充jdk代理和cglib代理在性能优化上的区别：jdk代理，在第17此调用时为提升性能，会针对一个方法产生一个代理类， 反射调用优化为直接调用，提升性能；cglib第一次调用就会产生代理并直接调用，无需反射调用，每个类会生成两个代理类，[一个配合目标对象调用，一个配合代理对象调用]，但是一个类可以有多个方法，不用针对单个方法产生代理类；
+      - 扩展jdk代理和cglib代理在性能优化上的区别(详情见后面的课程内容)：jdk代理，在第17此调用时为提升性能，会针对一个方法产生一个代理类， 反射调用优化为直接调用，提升性能；cglib第一次调用就会产生代理并直接调用，无需反射调用，每个类会生成两个代理类，[一个配合目标对象调用，一个配合代理对象调用]，但是一个类可以有多个方法，不用针对单个方法产生代理类；
 
   - jdk代理原理 // 应用诸如日志、权限、事务增强等；静态方法的反射调用 对象可以传Null;
 
@@ -97,6 +98,7 @@
 
       - ```java
         //模拟实现代理;后续还可以为invoke方法增加入参： 代理对象，method，方法入参；还有增加返回值、异常处理等；
+        //梳理下调用链：proxy.foo -> InvocationHandler.invoke -> 在main方法中自己编写的增强方法；
         public interface Foo{
             public void foo();
         }
@@ -106,7 +108,7 @@
                 System.out.println("target foo");
             }
         }
-        interface InvacationHandler implements Foo{
+        interface InvocationHandler implements Foo{
             void invoke();
         }
         
@@ -140,6 +142,64 @@
   - 前16次用本地的java native api， 使用NativeMethodAccessor，性能低；第17次  为了提升性能，生成了一个代理类GeneratedMethodAccessor[Arthas查看得知]，直接直接正常调用即可；
   - //asm插件使用教程略；
   
+- cglib代理原理？
+
+  - 模拟实现：在使用mehtod调用目标方法是，和jdk代理基本一致，不重复写了，==唯一的区别是目标类不需要实现接口了，代理类也不需要实现接口而是继承目标类；[视频中的mehtodIntercept直接用了三方包的]==； //梳理下调用链：proxy.save ->methodInterceptor.intercept -> 用了三方包，不知细节，但是理论上和jdk代理类似，main中自己编写的方法即可
+
+  - MethodProxy的使用：使用了三方包的MethodProxy类，提前获取MethodProxy【需要指定一个原始方法，即直接super.foo类似的形式直接调用父类方法即可】，然后作为参数传入methodInterceptor即可； //MethodProxy两个功能：调用目标方法的部分要从反射调整为 直接调用原始方法[直接调的核心是依据method对象知道自己要调目标/代理对象的哪个方法]；要同时支持 目标类、代理类；                                                  调用链梳理： proxy.save ->methodInterceptor.intercept -> 用了三方包，不知细节，但是理论上和jdk代理类似，main中自己编写的方法即可-> MethodProxy中的原始方法？？？
+
+  - 模拟实现MthodProxy：核心的两个方法 getIndex[获取目标方法的编号，方法签名转换为整数编号] invoke[依据整数编号正常调用目标对象的方法]
+
+    - ```java
+      //结合目标对象使用
+      public abstract class FastClass{
+          private Class type;
+          protected FastClass(){
+              throw new Error("Using the FastClass...")
+          }
+      }
+      public class TargetFastClass{
+          static Signature s0 = new Signature("save", "()v");
+          static Signature s1 = new Signature("save", "(I)v");
+          static Signature s2 = new Signature("save", "(J)v");
+      
+          public int getIndex(Signature signature){
+              if(s0.equals(signature)){
+                  return 0;
+              }else if(s1.equals(signature)){
+                  return 1;
+              }else if(s2.equals(signature)){
+                  return 2;
+              }
+          }
+         
+          public Object invoke(int index, Object target, Object[] args){
+              if(index == 0){
+                  ((Target) target).save();
+                  return null;
+              }else if(index == 1){
+                  ((Target) target).save((int) args[0]);
+                  return null;
+              }else if(index ==2){
+                  ((Target) target).save((long) args[0];
+                  return null;
+              }else{
+                  throw new RuntimeExceptioin("无此方法");
+              }
+          }
+          public static void main(String[] args){
+              TargetFastClasss fastClass = new TargetFastClass();
+              int index = fastClass.getIndex(new Signature("save", "(1)v"));
+              System.out.println(index);
+              fastClass.invoke(index, new Target(), new Object[]{100});
+          }
+      }
+      //结合代理对象使用：类似，不同的是方法编号获取代理类的方法编号；invoke调的是代理类的原始功能方法
+                                        
+      ```
+
+  - cglib代理 对比 jdk代理????
+
 - 容器、注解、后处理器梳理
   
   - 容器： GenericApplicationContext相比AnnotationConfigApplicationContext  ，很干净，没添加bean后处理器等；refresh()方法会执行工厂后处理器 初始化单例等；
