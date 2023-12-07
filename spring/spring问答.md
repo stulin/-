@@ -41,7 +41,7 @@
   - springBean生命周期  执行顺序：构造，依赖注入，初始化，销毁[单例才调用？其它scope似乎不大一样，关注后面的scope]；
   - 增强的方式：实现后处理器增强接口，重写增强方法即可，增强的时机有——实例化前后、依赖注入、初始化前后、销毁时；
   
-- ==todo: 设计模式学习，模板方法==
+- ==todo: 设计模式学习，模板方法; 责任链模式==
 
 - @Autowired解析底层原理？如何自己实现解析＠Autowired？
   - @Autowired解析时通过bean后处理器是实现的[AutowiredAnnotationBeanPostProcessor]，主要包括三步，首先，找到所有添加了@Autowired注解的方法，并封装为InjectionMeradata对象[findAutowiringMetadata]；接着调用metadata.inject方法进行依赖注入；
@@ -198,7 +198,110 @@
                                         
       ```
 
-  - cglib代理 对比 jdk代理????
+  - cglib代理 对比 jdk代理???? 参考AOP的实现方式有哪几种？部分的扩展
+
+- 切面、通知、切点、advisor之间是什么关系？spring中AOP是如何选择代理方式的
+
+  - Advisor：单组 通知+切点； 切面：一组或多组的Advisor，即多组 通知+切点。
+
+  - ==proxyFactory==的父类ProxyConfig有一个 ==proxyTargetClass==属性（记忆角度可以理解为是否优先用cglib）；
+
+    -    proxyTargetClass为false且目标 实现  接口，用jdk实现
+
+         proxyTargetClass为false且目标 没有实现 接口，用cglib实现
+
+         proxyTargetClass为true，用cglib实现
+
+  - ```java
+    //示例代码(了解下，不是重点)：基于MethodInterceptor等工具类自己模拟实现切面
+    //1.备好切点
+    AspectJExpressionPointcut pointcut = new AspectJEpressionPointcut();
+    pointcut.setExpression("execution(* foo())");
+    //2.备好通知  MethodInterceptor本质上是一个环绕通知
+    MethodInterceptor advice = invocation -> {
+        System.out.println("before...");
+        Object result = invocation.proceed();//调用目标
+        System.out.println("after...");
+        return result;
+    }
+    //3.备好切面
+    DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor(pointcut, advice);
+    //4.创建代理
+    Target1 target = new Target1();
+    ProxyFactory factory = new ProxyFactory();
+    factory.setTarget(target);
+    factory.setAdvisor(advisor);
+    I1 proxy = (I1) factory.getProxy();
+    proxy.foo();
+    proxy.bar();
+    ```
+
+- spring切点匹配有哪几种方式？底层原理是什么？
+
+  - spring切点支持 表达式匹配、注解匹配两种； 
+    - execution(返回值  包名-类名-方法名 ) + [底层是调用]AspectJExpressionPointcut.matches方法； 
+    - @annotation(注解的 包名-类名)  + [底层是调用]pointcut.matches方法；
+  - 特殊切点：用于判断一个方法或方法所属的类上或父接口上是否有注解 //例如@Transactional
+    - 需要自定义一个切点，重写matches方法，推荐使用StaticMethodMatcherPointcut
+    - //Tips：MergedAnnotations.from(method) 获取方法上所有注解；  MergedAnnotations.from(targetClass, MergedAnnotations.TYPE_HIERARCHY);  可以自己设置查找策略，默认只找方法、类上，设置为SearchStrategy.TYPE_HIERARCHY【表示还会查找继承树】
+
+- spring AOP底层的原理是什么[advisor层]？spring AOP是怎么实现的[advisor层]？//最底层是代理，这里主要讨论的是代理和高级切面的中间层，==advisor层==
+
+  - AnnotationAwareAspectJAutoProxyCreator.class有两个核心方法：findEligibleAdvisors、wrapIfnecessary
+    - findEligibleAdvisors : 找到所有的切面，包括高级切面Aspect[会转换成低级切面]和低级切面Advisor
+    - wrapIfNecessary:是否有必要创建代理，内部也是调用findEligibleAdvisors，返回值不为空说明有必要；
+  - 扩展 AnnotationAwareAspectJAutoProxyCreator 生效时机：通常生效时间（下发(*)占位的地方）：依赖注入之前   初始化之后 //创建-->  ( * )依赖注入-->初始化(* ) 
+    - 正常情况（初始化完成之后创建代理对象）：bean2中注入bean1； bean1先注册到容器，则bean1代理对象在bean1初始化之后生成；
+    - bean1、bean2循环依赖（构造和依赖注入之间创建代理对象，且会存入二级缓存）：bean1注入容器时：发现要注入bean2，于是进入bean2的流程【的构造  依赖注入  初始化】，bean2的依赖注入需要bean1代理对象，于是bean1的代理提前注入，最后bean1的依赖注入  初始化；
+    - 扩展：依赖注入和初始化不应该增强被增强，仍应该被施加于原始对象；
+
+- spring AOP底层的原理是什么[通知层]？spring AOP是怎么实现的[通知层]？
+
+  - 静态通知：不同通知最终统一转换为环绕通知 MethodInterceptor，并把转换后的通知添加到调用链MethodInvocation中，最后执行调用链即可【MethodInvocation.proceed()   使用了设计模式中的责任链模式】;// spring提供多个适配器完成转换工作，例如MethodBeforeAdviceAdapter会把@Before对应的  AspectJMethodBeforeAdvice适配为MethodBeforeAdviceInterceptor；getInterceptorsAndDynamicInterceptionAdvice()会把不同通知转换成环绕通知
+
+  - //某些通知内部需要用到调用链，需要将MethodInvocation放入当前线程(且需要加在最外层)，通知便可以从当前线程取；
+
+  - 一般适配器包含两个方法：supportAdcice判断是否是指定的Advice； getInterceptor用于进行类型转换； //适配器模式体现：把一套接口转换成另一套接口【转换的类对象成为适配器对象】，以便适合某种场景的调用
+
+  - ==责任链模式  原理：本质上就是一个递归调用——先调用所有的环绕通知，最后调用目标；这里的递归比较隐晦： 责任链的proceed() --> 通知的invoke,同时把自己作为入参 -->责任链的proceed() ;==   核心：入口是责任链的proceed，递归调用methodInterceptorList中的元素方法，Lisit里面的元素回调责任链的proceed
+
+    - ```java
+      //责任链  示例代码
+      static class MyInvocation implements MethodInvocation{
+          ....
+          public Object proceed(){
+              if(contu > methodInterceptorList.siz()){
+                  return method.invoke(targe, args);//调用目标，返回结束递归
+              }
+              MethodInterceptor methodInterceptor = methodInterceptorList.get(count ++ -1);
+              return methodInterceptor.invoke(this);//递归嗲用通知链
+          }
+          
+      }
+      static class Advices implements MthodIntercepter{
+          public Object invoke(MethodInvocation invocation{
+              System.out.println("Advice2.before()");
+              Object result = invocation.proceed();
+              System.out.println("Advice2.after()");
+              return result;
+          }
+      }
+      
+      ```
+
+  - 动态通知与静态通知：
+
+      \- 静态通知：通知方法没有入参，即不带参数绑定，性能相对高，执行是不需要切点； 
+
+      \- 动态通知：通知方法有入参，需要参数绑定，执行时需要切点；
+
+- spring AOP零碎知识：
+
+  - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
+      - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
+      - 低级切面：advisor.setOrder   ; //@Bean方法上的 @Order 无法生效；
+    - 如何手工讲高级切面转换为低级切面？
+        - spring高级切面一共5中，@Before  @After   @Around  @AfterThrowing @AfterReturning ;  不同高级切面 对应的 低级切面的通知 不同，依次为AspectJMehtodBeforeAdvice   AspectJAfterAdvice AspectJAroundAdvice  AspectJAfterReturningAdvice  AspectJAfterThrowingAdvice
 
 - 容器、注解、后处理器梳理
   
@@ -211,12 +314,17 @@
       - @Resource @PostConstruct @PreDestroy
     - ConfigurationPropertiesBindingPostProcesssor 
       - @ConfigrationProperties  SpringBoot的bean的属性和配置文件的键值对 做绑定, 前缀+属性名去配置文件中找环境变量  //[后面有详解]
+    - AnnotationAwareAspectJAutoProxyCreator
+      - @Aspect
   - beanFactory后处理器及对应注解
     - ConfigurationClassPostProcessor   @Bean、@Component 、@Import 、@ImportResource
     - MapperScannerConfigurer[springboot自动配置  ]   扫描mybatis的mapper接口；  //SSM架构用的@MapperScanner底层也是MapperScannerConfigurer.class ； @MapperScan
   
 - 小tip：
   
+  - 注解相关的好用的方法
+    - method.getAnnotation(Before.class).value()
+    - method.isAnnotationPresent
   - debug:单例注入多例，抛IllegalAccessException异常
     - 本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛IllegalAccessException异常；
     - 解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置  --add-opens；
