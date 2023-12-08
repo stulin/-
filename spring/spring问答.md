@@ -257,7 +257,9 @@
 
 - spring AOP底层的原理是什么[通知层]？spring AOP是怎么实现的[通知层]？
 
-  - 静态通知：不同通知最终统一转换为环绕通知 MethodInterceptor，并把转换后的通知添加到调用链MethodInvocation中，最后执行调用链即可【MethodInvocation.proceed()   使用了设计模式中的责任链模式】;// spring提供多个适配器完成转换工作，例如MethodBeforeAdviceAdapter会把@Before对应的  AspectJMethodBeforeAdvice适配为MethodBeforeAdviceInterceptor；getInterceptorsAndDynamicInterceptionAdvice()会把不同通知转换成环绕通知
+  - 不同通知最终统一转换为环绕通知 MethodInterceptor，并把转换后的通知添加到调用链MethodInvocation中，最后执行调用链即可【MethodInvocation.proceed()   使用了设计模式中的责任链模式】;// spring提供多个适配器完成转换工作，例如MethodBeforeAdviceAdapter会把@Before对应的  AspectJMethodBeforeAdvice适配为MethodBeforeAdviceInterceptor；getInterceptorsAndDynamicInterceptionAdvice()会把不同通知转换成环绕通知
+
+  - //静态通知、动态通知：整体的思路一样，不同的只是 低级切面中通知的实现类实现类，动态通知为InterceptrosAndDynamicMethodMatcher， 因为动态通知对应的advisor通知实现类要包含切点对象
 
   - //某些通知内部需要用到调用链，需要将MethodInvocation放入当前线程(且需要加在最外层)，通知便可以从当前线程取；
 
