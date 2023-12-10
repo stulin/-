@@ -259,7 +259,7 @@
 
   - 不同通知最终统一转换为环绕通知 MethodInterceptor，并把转换后的通知添加到调用链MethodInvocation中，最后执行调用链即可【MethodInvocation.proceed()   使用了设计模式中的责任链模式】;// spring提供多个适配器完成转换工作，例如MethodBeforeAdviceAdapter会把@Before对应的  AspectJMethodBeforeAdvice适配为MethodBeforeAdviceInterceptor；getInterceptorsAndDynamicInterceptionAdvice()会把不同通知转换成环绕通知
 
-  - //静态通知、动态通知：整体的思路一样，不同的只是 低级切面中通知的实现类实现类，动态通知为InterceptrosAndDynamicMethodMatcher， 因为动态通知对应的advisor通知实现类要包含切点对象
+  - //静态通知、动态通知：整体的思路一样，不同的只是 低级切面中通知的实现类实现类 要包含切点对象
 
   - //某些通知内部需要用到调用链，需要将MethodInvocation放入当前线程(且需要加在最外层)，通知便可以从当前线程取；
 
@@ -297,6 +297,25 @@
 
       \- 动态通知：通知方法有入参，需要参数绑定，执行时需要切点；
 
+- tomcat、dispatcherServlet之间是什么关系？
+
+  - spring要支持web容器，配置类有三项必须配置：内嵌web容器工厂、DispatcherServelet的Bean定义，注册bean[用于把DispatcherServlet注册到Tomcat]。其中DispatcherServelet是spring容器创建，但是初始化在tomcat完成[tomcat容器默认在首次使用dispatcherServlet的时候初始化，初始化时机可通过loadOnsStartup配置]，是springMVC程序的入口点。
+
+- dispatcherServlet初始化包括哪些组件？各个组件的初始化流程如何？
+
+  - 代码位置dispatcherServlet-->onRefresh-->initStrategies，初始化下面的九类组件；
+      - initMultipartResolver：初始化  文件上传解析器
+      - initLocaleResolver：初始化 本地化解析器，属于哪一种国家、地区、语言；//有多种实现：请求头中accept头获取相关信息  从cookie中获取等；
+      - //initThemeResolver：不重要
+      - initHandlerMappings： 初始化 路径映射器，请求下发到controller；
+      - initHandlerAdapters   
+        - 适配 不同形式的控制器方法，并调用它；
+        - handler：具体处理请求的代码，有多种形式；
+      - initHandlerExceptionResolvers   解析异常
+      - //后面三个不重要
+    - 核心组件的初始化流程
+        - initHandlerMappings：找到所有的HandlerMapping，依次查找父容器、当前容器，如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
+
 - spring AOP零碎知识：
 
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
@@ -324,14 +343,22 @@
   
 - 小tip：
   
+  - 配置文件属性读取
+  
+      \- 配置属性可以在配置文件【application.properties】中设置，并通过注解 @PropertySource + @Value/@EnableConfigurationProperties[结合WebMvcProperties.class/WebProperties.class）读取；例如：@EnableConfigurationProperties({ServerPropertires.class})会打包读取application.properties中server打头的key并封装为ServerProperties对象存入容器；
+  
   - 注解相关的好用的方法
     - method.getAnnotation(Before.class).value()
     - method.isAnnotationPresent
+  
   - debug:单例注入多例，抛IllegalAccessException异常
     - 本质上是创建代理对象，打印时最后反射调用Object的toString] ，jdk9以后的版本，反射调用jdk中的类，会抛IllegalAccessException异常；
     - 解决方案：改JDK版本；自己重写 javaBean的toString 方法；运行时添加指定的配置  --add-opens；
+  
   - 测试案例参考 session超时时间配制为10s：但是实际的超时时间是max(超时时间配置，检测session超时的频率)
+  
   - @Autowired结合方法进行注入，可以打印信息查看是否注入成功；
+  
   - @autowired  去找实例对象的依据是什么？@autowired和@Resource区别是什么？哪个优先级更高？//   ==todo:可以和后面@Autowired解析关联==
     - 依据类型[类或接口]匹配，有多个的时候[可以用qualifier指定？]会再匹配名字：即成员变量名字和（首字母小写的）类名，匹配上优先；
     - @Resource 类似，对于多个候选项的情况则可以用name属性指定名字
