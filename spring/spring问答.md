@@ -315,6 +315,7 @@
       - //后面三个不重要
     - 核心组件的初始化流程
         - initHandlerMappings：找到所有的HandlerMapping，依次查找父容器、当前容器，如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
+          - （不足时似乎视频没给出具体的类名、方法名）例如：RequestMappingHandlerMapping  HandlerMappin的常见实现之一；解析@RequestMapping及派生注解，建立 请求路径----控制器方法之间的映射关系；初始化过程：先到当前容器下找到所有控制器类，查看控制器有@RequestMapping及其派生注解【包括GetMapping等】的方法并记录  路径--->控制器方法  信息【getHandlerMethods方法可以查看】并保存到RequestMappingHandlerMapping     ////默认的RequestMappingHandlerMapping 创建的RequestMappingHandlerMapping对象会作为dispatcher的属性，但是不会放入Spring容器中； 可以在WebConfig中，自己添加bean定义RequestMappingHandlerMapping
 
 - spring AOP零碎知识：
 
