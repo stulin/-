@@ -41,7 +41,7 @@
   - springBean生命周期  执行顺序：构造，依赖注入，初始化，销毁[单例才调用？其它scope似乎不大一样，关注后面的scope]；
   - 增强的方式：实现后处理器增强接口，重写增强方法即可，增强的时机有——实例化前后、依赖注入、初始化前后、销毁时；
   
-- ==todo: 设计模式学习，模板方法; 责任链模式==
+- ==todo: 设计模式学习，模板方法; 责任链模式;组合模式==
 
 - @Autowired解析底层原理？如何自己实现解析＠Autowired？
   - @Autowired解析时通过bean后处理器是实现的[AutowiredAnnotationBeanPostProcessor]，主要包括三步，首先，找到所有添加了@Autowired注解的方法，并封装为InjectionMeradata对象[findAutowiringMetadata]；接着调用metadata.inject方法进行依赖注入；
@@ -301,7 +301,7 @@
 
   - spring要支持web容器，配置类有三项必须配置：内嵌web容器工厂、DispatcherServelet的Bean定义，注册bean[用于把DispatcherServlet注册到Tomcat]。其中DispatcherServelet是spring容器创建，但是初始化在tomcat完成[tomcat容器默认在首次使用dispatcherServlet的时候初始化，初始化时机可通过loadOnsStartup配置]，是springMVC程序的入口点。
 
-- dispatcherServlet初始化包括哪些组件？各个组件的初始化流程如何？
+- dispatcherServlet初始化包括哪些组件？各个组件的初始化流程如何？各个组件分别又有什么用处？
 
   - 代码位置dispatcherServlet-->onRefresh-->initStrategies，初始化下面的九类组件；
       - initMultipartResolver：初始化  文件上传解析器
@@ -313,9 +313,49 @@
         - handler：具体处理请求的代码，有多种形式；
       - initHandlerExceptionResolvers   解析异常
       - //后面三个不重要
-    - 核心组件的初始化流程
-        - initHandlerMappings：找到所有的HandlerMapping，依次查找父容器、当前容器，如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
-          - （不足时似乎视频没给出具体的类名、方法名）例如：RequestMappingHandlerMapping  HandlerMappin的常见实现之一；解析@RequestMapping及派生注解，建立 请求路径----控制器方法之间的映射关系；初始化过程：先到当前容器下找到所有控制器类，查看控制器有@RequestMapping及其派生注解【包括GetMapping等】的方法并记录  路径--->控制器方法  信息【getHandlerMethods方法可以查看】并保存到RequestMappingHandlerMapping     ////默认的RequestMappingHandlerMapping 创建的RequestMappingHandlerMapping对象会作为dispatcher的属性，但是不会放入Spring容器中； 可以在WebConfig中，自己添加bean定义RequestMappingHandlerMapping
+  - 核心组件的初始化流程 //handlerMapping依据request找到对应的handlerChain，handlerAdapter调用具体的handler（handlerChain的信息作为入参）
+      - initHandlerMappings：找到所有的HandlerMapping，依次查找父容器、当前容器，如果容器没有，使用默认的HandlerMapping，在DispatcherServlet.properties中配置；
+        - （不足时似乎视频没给出具体的类名、方法名）例如：RequestMappingHandlerMapping  HandlerMappin的常见实现之一；解析@RequestMapping及派生注解，建立 请求路径----控制器方法之间的映射关系；核心方法：getHandler(request)
+        - 初始化过程：先到当前容器下找到所有控制器类，查看控制器有@RequestMapping及其派生注解【包括GetMapping等】的方法并记录  路径--->控制器方法  信息【getHandlerMethods方法可以查看】并保存到RequestMappingHandlerMapping     ////默认的RequestMappingHandlerMapping 创建的RequestMappingHandlerMapping对象会作为dispatcher的属性，但是不会放入Spring容器中； 可以在WebConfig中，自己添加bean定义RequestMappingHandlerMapping
+      - HandlerAdapters：实现了HandlerAdapter接口，即处理器适配器，作用是调用控制器方法； 核心方法：invokeHandlerMethod【调用handlerMethod】  //初始化内容课程似乎没提及
+
+- spring中如何添加自定义的参数解析器、返回值处理器? ==//课程的两个示例很有参考价值，建议收藏==
+
+  - 自定义参数解析器：
+
+    - \- 自定义注解；
+
+      \- 自定义resolver并实现HandlerMethodArgumentResolver接口，重写两个方法 supportsParameter、 resolveArgument
+
+      \- 将自定义的参数解析器，加入到RequestMappingHandlerAdapter的实现类中；
+
+      //后续使用的时候只需要在方法参数前添加注解即可；
+
+  - 自定义返回值处理器  //依据返回值类型、方法是否加某个注解进行特殊处理
+    - 自定义注解；
+    - 自定义resolver并实现HandlerMethodReturnValueHandler接口，重写两个方法  supportsReturnType、handleReturnValue
+    - 将自定义的参数解析器，加入到RequestMappingHandlerAdapter的实现类中；
+    - //后续使用的时候只需要在方法上添加注解即可；
+
+- 常用的参数注解有哪些？spring参数解析的底层原理是什么？//顺便纪录下参数解析相关的核心方法  
+
+  - spring  使用了组合模式【handlerMethodArguments】，需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；
+    - 没有@RequestParam的其它参数 如带@PathVariable也会被认为省略了@RequestParam[尝试用RequestParamMethodArguementResolver解析]，会报错；//后面会学到用组合模式+ 可省略/不可省略两个解析器可以解决；
+  - 常用的参数注解： 
+    - @RequestParam+String : 普通请求参数param，RequestParamMethodArguementResolver
+    -  没加解析参数+String：等价1，省略了@RequestParam；但是要配置支持省略  
+    - @RequestParam+类型转换  ：多指定一个类型转换器——dataBindFactory  
+    - @RequestParam 注解属性中包含${} ，即从环境变量获取默认值 ：RequestParamMethodArguementResolver的第一个参数要指定beanFactory用于读取环境变量、配置文件
+    -  @RequestParam  + MultipartFile 上传文件  ： RequestParamMethodArguementResolver即可
+    - @PathVariable   + int // test/{id}   ：RequestParamMethodArguementResolver，请求中需要将请求路径的{id}和实参对应起来，结果放入request作用域[key是固定的]
+    - @RequestHeader + String //解析请求头数据  
+    - @CookieValue + String
+    - @Value 注解属性中包含${}+Stirng   获取Spring中数据  
+    -  //特殊类型  //包括request response session等；  
+    - @ModelAttribute  + 自定义类型； 
+    - 自定义类型
+    -  @Request + 自定义类型: 请求体获取数据
+  - //比较关键的方法：method----initParameterNameDiscovery是为了解析方法入参的参数名；getParameterAnnotations获取参数上的所有注解名;   resolver----supportsParameter判断时否支持某种参数；resolver.resolveArgument  真正解析参数得到实参；
 
 - spring AOP零碎知识：
 
