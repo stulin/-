@@ -341,21 +341,33 @@
 
   - spring  使用了组合模式【handlerMethodArguments】，需要依次调用每个Resolver.supportsParameter方法，直到找到一个 支持此参数的解析器；
     - 没有@RequestParam的其它参数 如带@PathVariable也会被认为省略了@RequestParam[尝试用RequestParamMethodArguementResolver解析]，会报错；//后面会学到用组合模式+ 可省略/不可省略两个解析器可以解决；
-  - 常用的参数注解： 
+  - 常用的参数注解及解析的内容、对应的解析器： 
     - @RequestParam+String : 普通请求参数param，RequestParamMethodArguementResolver
     -  没加解析参数+String：等价1，省略了@RequestParam；但是要配置支持省略  
     - @RequestParam+类型转换  ：多指定一个类型转换器——dataBindFactory  
     - @RequestParam 注解属性中包含${} ，即从环境变量获取默认值 ：RequestParamMethodArguementResolver的第一个参数要指定beanFactory用于读取环境变量、配置文件
     -  @RequestParam  + MultipartFile 上传文件  ： RequestParamMethodArguementResolver即可
     - @PathVariable   + int // test/{id}   ：RequestParamMethodArguementResolver，请求中需要将请求路径的{id}和实参对应起来，结果放入request作用域[key是固定的]
-    - @RequestHeader + String //解析请求头数据  
-    - @CookieValue + String
-    - @Value 注解属性中包含${}+Stirng   获取Spring中数据  
-    -  //特殊类型  //包括request response session等；  
-    - @ModelAttribute  + 自定义类型； 
-    - 自定义类型
-    -  @Request + 自定义类型: 请求体获取数据
+    - @RequestHeader + String //解析请求头数据，RequestHeaderMethodArgumentResolver  ，需要BeanFactory  
+    - @CookieValue + String：//解析Cookie数据，ServletCookieValueMethodArgumentResolver  
+    - @Value 注解属性中包含${}/#{}+Stirng   获取Spring中数据 :ExpressionValueMethodArgumentResolver
+    -  特殊类型  //包括request response session等；  ServletRequestMethodArgumentResolver
+    - @ModelAttribute  + 自定义类型：参数解析器处理结果会保存到MVCContainer  ServletModelAtrributeMethodProcessor
+    - 自定义类型：等价上面，省略了@ModelAttribute；但是要配置支持省略   //要放在例2的省略版解析器前面
+    -  @RequestBody + 自定义类型: 请求体获取数据    RequestResponseBodyMethodProcessor，需要一个MessageConverter  
   - //比较关键的方法：method----initParameterNameDiscovery是为了解析方法入参的参数名；getParameterAnnotations获取参数上的所有注解名;   resolver----supportsParameter判断时否支持某种参数；resolver.resolveArgument  真正解析参数得到实参；
+
+- spring编译会保留参数名吗？有几种方式可以保留参数名？
+
+  - \- 编译    反编译 可以发现编译默认是不保留参数名；解决方案：
+
+      \- 可以添加-parameters[反编译发现class中有MethodParameter，其中包含参数名称信息，参数可以反射获取] ；
+
+      \- 或者-g[反编译会发现class中有LocalVariableTable，其中包含参数名称信息，参数名 反射无法获取，但是可以ASM获取【LocalVariableTableParameterNameDiscoverer底层用ASM】;  只能获取类的参数名，==对接口不生效==]  //反编译  ： javap -c -v .\Bean1.class 
+
+      \- spring中参数名获取默认是DefaultParameterNameDiscoverer， 结合了两种(MethodParameter+LocalVariableTable)，
+
+  - 其它：idea的src，自动编译会加一些选项，如-p，大坑，吃过大亏！！idea启动正常，然后自动化部署就报错；
 
 - spring AOP零碎知识：
 
