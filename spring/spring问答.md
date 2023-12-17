@@ -369,6 +369,24 @@
 
   - 其它：idea的src，自动编译会加一些选项，如-p，大坑，吃过大亏！！idea启动正常，然后自动化部署就报错；
 
+- spring中是如何实现数据绑定中的类型转换的？
+
+  - spring中的类型转换接口都实现了TypeConverter，转换时，有一个 TypeConverter Delegate会 视情况委派 ConversionService与PropertyEditorRegistry真正执行转换；优先级依次如下：优先级：PropertyEditor【来自jdk】中自定义的【@InitBinder添加】；ConversionService【来自spring】；PropertyEditor默认的；特殊处理??；
+  - TypeConverter 常见的实现有四种： SimpleTypeConverter（仅做类型转换）    BeanWrapperImpl（为bean属性赋值，类型转换走反射的get set）  DirecFieldAccessor（为bean属性赋值，类型转换走反射的成员变量赋值）  ServletRequestDataBinder（绑定配置文件属性和Bean属性，directFieldAccess为真则走Field；） ，web环境下推荐ServletRequestDataBinder且设置directFieldAccess为false？？？
+
+- spring中如何自定义类型转换方法扩展 数据绑定中的类型转换？
+
+  -  ServletRequestDataBinderFactory指定扩展方法 + @InitBinder声明扩展方法；//底层用的是PropertyEditorRegistry   PropertyEditor
+  - ServletRequestDataBinderFactory指定initializer + FormattingConcersionService添加自定义扩展转换器并封装入ConfigurableWebBindingIntializer //底层用的时ConversinService Formatter
+  - 上述两者同时存在时@InitBinder优先级更高
+  - DefaultFormattingConversionService/ApplicationConversionService + @DateTimeFormat指定日期格式
+    - 默认的ConversionService[其实内置了对特殊日期格式的解析，会针对注解自己添加转换器]配合@DateTimeFormat指定日期格式；  DefaultFormattingConversionService或ApplicationConversionService[springBoot中]；
+
+- 如何获取一个类的泛型信息？
+
+  - jdk获取：getGenericSuperclass获取有泛型信息的父类；有泛型信息 类型是ParameterizedType；getActualTypeArguments获取泛型参数(可以有多个)；
+  - spring获取：resolveTypeArguments入参：子类类型、父类类型（也可以有多个，获取单个对应的方法为resolveTypeArgument）
+
 - spring AOP零碎知识：
 
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
