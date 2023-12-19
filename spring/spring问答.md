@@ -398,6 +398,16 @@
 
   - 先是==RequestMappingHandlerAdapter(图2)== 这边的 准备工作：准备 数据绑定工厂(解析Advice中的@InitBinder)、模型工厂(例如 解析Advice中的@ModelAttribute)，[控制器的临时数据会保存到ModelAndViewContainer]；     然后是==ServletInvocableHandlerMethod== 完成调用：准备参数【涉及RequestBodyAdvice等？】（包括 数据绑定&&类型转换；参数名解析；参数解析等）、==反射调用方法==、返回值解析【涉及RespoonseBodyAdvice等?  例如MVC中添加Model数据、处理视图名是否渲染等】、最后从ModelAndViewContainer中获取最终结果；
 
+- @ModelAttribute有几种用法？底层的实现原理是什么？
+
+  - \- 第一种用法：==加在参数名上==  流程：参数解析器[ServletModelAttributeMethodProcessor]   //RequestMappingHandlerAdapter内部就包含了参数解析器；
+
+      \- 参数解析器的解析流程：调用对象构造方法，用数据绑定工厂 绑定空对象和参数，最终的对象放入MVCContainer[默认名称，对象类型首字母小写]；
+
+    \- 第二种用法：==加在controller的某个方法名上==[只对单个controller生效，而不是单个方法！！！！]：解析者变为RequestMappingHandlerAdapter，ModelFactory[模型工厂]在标注了@ModelAttribute方法被调用后，会把返回值放入MVCContainer(默认名字为方法返回值类型首字母小写)； //扩展：加在@ControllerAdvice标注的类的方法上则对所有的方法生效； 
+
+  - //初始化的  afterPropertiesSet()  方法会自动找到所有标注@ModelAttribute的方法并记录；
+
 - spring AOP零碎知识：
 
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
