@@ -1,3 +1,5 @@
+//内容很多很杂，似乎没有什么重点，是不是可以简单看下哪些==知识点是核心==，==哪些思想是核心==，最后汇总成一个问题：如何自己从头实现一个spring?     问题梳理完还需要继续
+
 如何自己从头实现一个spring?
 
 - 容器与Bean、  AOP、  WEB MVC、  Spring Boot、其他
@@ -386,6 +388,15 @@
 
   - jdk获取：getGenericSuperclass获取有泛型信息的父类；有泛型信息 类型是ParameterizedType；getActualTypeArguments获取泛型参数(可以有多个)；
   - spring获取：resolveTypeArguments入参：子类类型、父类类型（也可以有多个，获取单个对应的方法为resolveTypeArgument）
+
+- spring中@InitBinder是什么时候完成解析的？由谁解析？
+
+  - @InitBinder由RequestMappingHandlerAdapter解析，解析时机视添加的位置而定：@Controller【只对单个controller生效；getDataBinderFactory被调用时完成解析】、@ControllerAdvice中【全局，对所有控制器生效；初始化的时候完成解析】；
+  - ////@ControllerAdvice可搭配的注解：@InitBinder【添加自定义类型类型转换器】  @ExceptionHandler【异常处理】  @ModelAttribute【返回值添加到 ModelAndView中】
+
+- spring中控制器方法的执行流程是怎样的？
+
+  - 先是==RequestMappingHandlerAdapter(图2)== 这边的 准备工作：准备 数据绑定工厂(解析Advice中的@InitBinder)、模型工厂(例如 解析Advice中的@ModelAttribute)，[控制器的临时数据会保存到ModelAndViewContainer]；     然后是==ServletInvocableHandlerMethod== 完成调用：准备参数【涉及RequestBodyAdvice等？】（包括 数据绑定&&类型转换；参数名解析；参数解析等）、==反射调用方法==、返回值解析【涉及RespoonseBodyAdvice等?  例如MVC中添加Model数据、处理视图名是否渲染等】、最后从ModelAndViewContainer中获取最终结果；
 
 - spring AOP零碎知识：
 
