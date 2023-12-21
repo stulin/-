@@ -408,6 +408,20 @@
 
   - //初始化的  afterPropertiesSet()  方法会自动找到所有标注@ModelAttribute的方法并记录；
 
+- spring中返回值有哪几种类型？返回值处理器的底层原理是什么？
+
+  - 返回值有7种类型：@ModelAttribute+@RequestMapping[默认视图会取路径]+自定义类型、自定义类型[省略@ModelAttribute]     不走视图渲染的三个方法（对应的handlerReturnValue中会把setRequestHandler(true) ）:【RequestHandler为true】： HttpEntity<T>   【状态码  响应头  响应体】HttpHeaders【只有响应头】   @ResponseBody【只有响应体】
+  - 核心就是两个方法：supportsReturnType[是否支持 输入的  返回值类型]；handlerReturnValue[进行对应的处理；不同的类型对应着不同的处理器 最后用一个组合模式串起来即可 //==渲染的模板哪里来的？MVC有路径，去资源路径下找即可==
+  - 可以简单分为两类，前4种为一类，都是 把模型和视图名添加到MVCContainer，然后视图渲染（不同的只是模型和视图名的来源不同）；后3种为一类， 用MessaeConverer把响应体的内容转换成json数据；还可以自己设置状态码、响应头等，最后把结果放到Response中(不同的只是是否有响应体 及是否有默认响应头)。
+    -  ModelAndView  //handlerReturnValue会把模型和视图名添加到MVCContainer，然后视图渲染
+    - String和ModelAndView类似，string就是视图名  【少了添加MVC到容器】
+    - ModelAttribute+自定义类型+@RequestMapping[默认视图会取路径]
+        - handlerReturnValue会把模型添加到MVCContainer，视图名则从请求路径获取   //==后面想看下MVCContainer效果；user=User{...}==
+      - 省略了@ModelAttribute，和上一种情况一样；
+      - HttpEntity<T>   包括：状态码  响应头  响应体；//示例中  handlerReturnValue： 用MessaeConverer把响应体的内容转换成json数据；还可以自己设置状态码、响应头等；
+      - @HttpHeaders：和HttpEntity<T>类似，不同 的是只有响应头有值
+      - @ResponseBody  和HttpEntity<T>类似，handlerReturnValue： 用MessaeConverer把响应体的内容转换成json数据；//会自动生成部分响应头[有默认值Content-Type-application/json]
+
 - spring AOP零碎知识：
 
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
