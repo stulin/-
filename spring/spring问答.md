@@ -422,11 +422,27 @@
       - @HttpHeaders：和HttpEntity<T>类似，不同 的是只有响应头有值
       - @ResponseBody  和HttpEntity<T>类似，handlerReturnValue： 用MessaeConverer把响应体的内容转换成json数据；//会自动生成部分响应头[有默认值Content-Type-application/json]
 
+- 常见的消息转换器有哪些？sping中哪里用到了消息转换器？spring中如何指定消息转换器？
+
+  - MappingJackson2HttpMessageConverter(对象----JSON 的互相转换)、MappingJackson2XmlHttpMessageConverter(对象转XML)。//canWrite(..)  write  canRead read
+  - 消息转换器应用场景：@requsetBody对应的入参处理器解析转换为JSON串、@ResponseBody对应的返回值处理器等；
+  - 消息转换器的执行顺序(==针对返回值处理而言，请求参数处理不一定  视频未验证==)：多个转换器的执行顺序，1.看响应中的ContentType(通常可以直接看contreller的@RequestMapping是否指定)若;2.看请求中的Accept是否指定；3.默认messageConverter  List的顺序；
+
+- spring如何对请求体、响应体进行增强？
+
+  - @ControllerAdvice标注类 实现  ResponseBodyAdice<Object>  接口同时重写supprts  beforeBodyWrite方法【supprts方法return true的情况下才会调用beforeBodyWrite方法】
+  - 例：Result类直接返回，不是则可以自动包装为Result；
+
+- 
+
+
+
 - spring AOP零碎知识：
 
+  - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
-      - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
-      - 低级切面：advisor.setOrder   ; //@Bean方法上的 @Order 无法生效；
+    - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
+    - 低级切面：advisor.setOrder   ; //@Bean方法上的 @Order 无法生效；
     - 如何手工讲高级切面转换为低级切面？
         - spring高级切面一共5中，@Before  @After   @Around  @AfterThrowing @AfterReturning ;  不同高级切面 对应的 低级切面的通知 不同，依次为AspectJMehtodBeforeAdvice   AspectJAfterAdvice AspectJAroundAdvice  AspectJAfterReturningAdvice  AspectJAfterThrowingAdvice
 
