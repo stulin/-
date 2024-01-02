@@ -433,11 +433,27 @@
   - @ControllerAdvice标注类 实现  ResponseBodyAdice<Object>  接口同时重写supprts  beforeBodyWrite方法【supprts方法return true的情况下才会调用beforeBodyWrite方法】
   - 例：Result类直接返回，不是则可以自动包装为Result；
 
-- 
+- @Exception 底层原理是什么？ @ExceptionHandler底层的原理是什么？ //==异常处理的层级，自己try catch；方法对应的类有@ExceptionHandler标注的方法；@AdivceController标注的类中有@ExceptionHandler标注的方法；tomcat/BasicErrorController==
 
+  - @Exception：普通的controller请求会调用  dispatcherServlet的doDispatch方法：【获取handlerAdaptor对象、调用handle()，】如果有异常 会先记录，后续调用processDispatchResult时，有异常的话会进一步调用processHandlerException【会调用异常处理器(handlerExceptionResolver)处理异常，常用的异常处理器的实现之一是 ExceptionHandlerExceptionResolver，专门解析@ExceptionHandler】；
+  - @ExceptionHandler： 相关的核心类是ExceptionHandlerExceptionResolver，
+    - spring初始化阶段 :会为ExceptionHandlerExceptionResolver设置消息转换器；【调用resolver.afterPropertiesSet()会自动】设置一些默认的参数解析器、返回值处理器；
+    - ==真正处理异常可以调用resolveException()==        ==【该方法会查看 抛异常方法对应的类中是否有@ExceptionHandler及相关注解的方法，有的话进一步判断注解的异常处理范围与当前捕获的异常是否匹配，匹配则反射调用@ExceptionHandler及相关注解标注的方法{这里就是handle}】==; 
+    - 而且可以处理嵌套异常：会被逐层展开  变成一个数组以保证被嵌套的异常也能被处理
+  - @ControllerAdvice+@ExceptionHandler组合用法：会先找抛异常方法所在的类内是否有@ExceptionHandler标注的方法，如果没有的话，会找@ControllerAdvice注解类 内 包含@ExceptionHandler注解方法，异常会由方法处理
+    - 容器中的ExceptionHandlerExceptionResolver初始化方法afterPropies方法中会调用initExceptionHandlerAdviceCache()，该方法会 查找context中所有的@ControllerAdvice标注的Bean，并遍历找到其中包含exceptionhandler注解的方法，加入cahce，方便后续从cahce中取异常处理方法并调用
+  - 什么情况下的异常 @ControllerAdvice+@ExceptionHandler也无法处理？会由谁处理？
+    - 制器的异常可以被ControllerAdvice处理，但是如filter中的异常不会被处理，需要更上层的异常处理者；其实tomcat是自带默认的异常处理器的，会自动返回异常的起因等等；
+    - 处理springboot抛出的未经处理的异常有两种方式，一是使用tomcat自带的异常处理机制，即ErrorPageRegistrar；二是使用BasicErrorController; spring默认第二种
+    - tomcat自定义异常处理地址：errorPageRegistrar 设置tomcat出错时默认的错误页面地址，可以是servlet 、静态页面或者自定义的controller的地址[底层是请求转发，浏览器现实的地址不变]；errorPageRegistrarBeanPostProcessor [在创建TomcatServletWebServerFactory的时候会自动回调]会找到容器中所有errorPageRegistrar()，调用对应的方法来添加errorPage；
+      -  //tomcat捕获到spring框架外的异常会保存到Request域中，所以异常信息可以从Request域中获取；
+    - BasicErrorController处理 spring未处理的异常，匹配的错误路径：1.(配置文件定义的属性)servler.error.path 2. (配置文件定义的属性)error.path 3. 默认/error；
+      - 需要自己添加配置Bean  BasicErrorController，入参： ErrorAttributes[要显示的异常内容,如时间 错误路径等]   ErrorProperties[要读取的配置文件的键值信息] 
+      - 支持不同的响应格式[json格式[如postMan请求]   html格式[如浏览器请求] ]  
+        - 返回json格式的数据不需要特殊处理；  
+        - 返回格式为html[如浏览器请求 postman设置Accept为text/html]，返回ModelAndView需要视图渲染，故需要指定视图名（这里是error）、视图解析器并自定义对应名的视图，这里用bean 定义视图+视图解析器【这里的BeanNameViewResolverl会被交给dispatcherServlet, 可以依据View的名称error找到@Bean名字为error的View】//自定义视图的render方法的model中包含了异常信息，即BasicErrorController的返回值会被添加到MVC
 
-
-- spring AOP零碎知识：
+- #### spring AOP零碎知识：
 
   - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
