@@ -453,6 +453,18 @@
         - 返回json格式的数据不需要特殊处理；  
         - 返回格式为html[如浏览器请求 postman设置Accept为text/html]，返回ModelAndView需要视图渲染，故需要指定视图名（这里是error）、视图解析器并自定义对应名的视图，这里用bean 定义视图+视图解析器【这里的BeanNameViewResolverl会被交给dispatcherServlet, 可以依据View的名称error找到@Bean名字为error的View】//自定义视图的render方法的model中包含了异常信息，即BasicErrorController的返回值会被添加到MVC
 
+- spring支持哪些 映射器和适配器 组合？各自要怎么用？
+
+  - 之前用的 映射器和适配器 组合，组合一：RequestMappingHandlerMapping + RequestMappingHandlerAdapter; 
+    - 作用：路径映射[需要解析@RequestMapping及其派生注解]    调用控制器方法[解析参数  调用 处理返回值]
+  - 组合二：BeanNameUrlHandlerMapping   +  SimpleControllerHandlerAdapter  （spring更为早期的实现）
+       - BeanNameUrlHandlerMapping   不是去找@RequstMapping注解的方法，而是去找  名字是/ 开头的bean
+      - SimpleControllerHandlerAdapter   [要求控制器的类必须实现Controller接口，并重写handleRequest方法（即最终要调用的控制器方法）]
+    - 组合三：自定义MyHandlerMapping + 自定义MyHandlerAdapter  //模拟实现组合二的逻辑
+        - MyHandlerMapping 实现 HandlerMapping  接口，重写getHandler方法，找到请求对应的controller并封装为HandlerExecutionChain//可以在初始化方法提前准备映射关系：找到所哟实现了controller接口且名字是 / 打头的bean；
+        - MyHandlerAdapter  实现 HandlerAdapter  接口并重写三个方法：supports(当前的Adapter是否能处理输入的Handler，这里的例子则要求实现Controller接口)  handle(调用handleRequest)  getLastModified(已经不用了)
+            - //getLastModified已经过时；handle返回null表示不视图渲染流程；
+
 - #### spring AOP零碎知识：
 
   - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
