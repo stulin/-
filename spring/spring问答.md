@@ -460,10 +460,11 @@
   - 组合二：BeanNameUrlHandlerMapping   +  SimpleControllerHandlerAdapter  （spring更为早期的实现）
        - BeanNameUrlHandlerMapping   不是去找@RequstMapping注解的方法，而是去找  名字是/ 开头的bean
       - SimpleControllerHandlerAdapter   [要求控制器的类必须实现Controller接口，并重写handleRequest方法（即最终要调用的控制器方法）]
-    - 组合三：自定义MyHandlerMapping + 自定义MyHandlerAdapter  //模拟实现组合二的逻辑
-        - MyHandlerMapping 实现 HandlerMapping  接口，重写getHandler方法，找到请求对应的controller并封装为HandlerExecutionChain//可以在初始化方法提前准备映射关系：找到所哟实现了controller接口且名字是 / 打头的bean；
-        - MyHandlerAdapter  实现 HandlerAdapter  接口并重写三个方法：supports(当前的Adapter是否能处理输入的Handler，这里的例子则要求实现Controller接口)  handle(调用handleRequest)  getLastModified(已经不用了)
-            - //getLastModified已经过时；handle返回null表示不视图渲染流程；
+  - 组合三：自定义MyHandlerMapping + 自定义MyHandlerAdapter  //模拟实现组合二的逻辑
+      - MyHandlerMapping 实现 HandlerMapping  接口，重写getHandler方法，找到请求对应的controller并封装为HandlerExecutionChain//可以在初始化方法提前准备映射关系：找到所哟实现了controller接口且名字是 / 打头的bean；
+      - MyHandlerAdapter  实现 HandlerAdapter  接口并重写三个方法：supports(当前的Adapter是否能处理输入的Handler，这里的例子则要求实现Controller接口)  handle(调用handleRequest)  getLastModified(已经不用了)
+          - //getLastModified已经过时；handle返回null表示不视图渲染流程；
+  - 组合四：
 
 - #### spring AOP零碎知识：
 
