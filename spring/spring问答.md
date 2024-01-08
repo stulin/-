@@ -453,7 +453,7 @@
         - 返回json格式的数据不需要特殊处理；  
         - 返回格式为html[如浏览器请求 postman设置Accept为text/html]，返回ModelAndView需要视图渲染，故需要指定视图名（这里是error）、视图解析器并自定义对应名的视图，这里用bean 定义视图+视图解析器【这里的BeanNameViewResolverl会被交给dispatcherServlet, 可以依据View的名称error找到@Bean名字为error的View】//自定义视图的render方法的model中包含了异常信息，即BasicErrorController的返回值会被添加到MVC
 
-- spring支持哪些 映射器和适配器 组合？各自要怎么用？
+- spring支持哪些 映射器和适配器 组合？各自要怎么用？ //==注意总结各组之间的区别==
 
   - 之前用的 映射器和适配器 组合，组合一：RequestMappingHandlerMapping + RequestMappingHandlerAdapter; 
     - 作用：路径映射[需要解析@RequestMapping及其派生注解]    调用控制器方法[解析参数  调用 处理返回值]
@@ -464,7 +464,14 @@
       - MyHandlerMapping 实现 HandlerMapping  接口，重写getHandler方法，找到请求对应的controller并封装为HandlerExecutionChain//可以在初始化方法提前准备映射关系：找到所哟实现了controller接口且名字是 / 打头的bean；
       - MyHandlerAdapter  实现 HandlerAdapter  接口并重写三个方法：supports(当前的Adapter是否能处理输入的Handler，这里的例子则要求实现Controller接口)  handle(调用handleRequest)  getLastModified(已经不用了)
           - //getLastModified已经过时；handle返回null表示不视图渲染流程；
-  - 组合四：
+  - 组合四：RouterFunctionMapping与HandlerFunctionAdapter (spring5.2才有，处理简单逻辑时相对简洁)
+      - 初始化时会找到容器中所有的RouterFunction（包含RequestPredict、HandlerFunction），请求来了，RouterFunctionMapping匹配到对应的handlerFunction(处理函数)，最后由HandlerFunctionAdapter调用handler
+      - 对比组合一，区别在于映射的key(这里是RequestPredict, 组合一为RequstMapping ) 和  处理函数的形式（要实现HandlerFunction接口, 组合一为控制器具体方法）; 参数解析、返回值处理等扩展功能相对少，但是简洁
+  - 组合五：SimpleUrlHandlerMapping + HttpRequestHandlerAdapter + ResourceHttpRequestHandler//处理静态资源的
+      -  SimpleUrlHandlerMapping映射；ResourceHttpRequestHandler 作为处理器处理静态资源[本质就是一个静态资源目录]；HttpRequestHandlerAdapter调用处理器；
+      - 对比组合一，区别在于映射的key(ResourceHttpRequestHandler的beanName[一般包含通配符] ) 和  处理函数的形式（静态资源对应的ResourceHttpRequestHandler）
+  - 第六组：欢迎页映射器 [静态]  WelcomePageHandlerMapping+ ResourceHttpRequestHandler+ SimpleControllerHandlerAdapter    //将访问根路径 / 的请求映射到欢迎页【可以是静态资源或者控制器】 //springBoot才有
+      - //视频没看完；
 
 - #### spring AOP零碎知识：
 
