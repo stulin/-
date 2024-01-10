@@ -470,8 +470,37 @@
   - 组合五：SimpleUrlHandlerMapping + HttpRequestHandlerAdapter + ResourceHttpRequestHandler//处理静态资源的
       -  SimpleUrlHandlerMapping映射；ResourceHttpRequestHandler 作为处理器处理静态资源[本质就是一个静态资源目录]；HttpRequestHandlerAdapter调用处理器；
       - 对比组合一，区别在于映射的key(ResourceHttpRequestHandler的beanName[一般包含通配符] ) 和  处理函数的形式（静态资源对应的ResourceHttpRequestHandler）
-  - 第六组：欢迎页映射器 [静态]  WelcomePageHandlerMapping+ ResourceHttpRequestHandler+ SimpleControllerHandlerAdapter    //将访问根路径 / 的请求映射到欢迎页【可以是静态资源或者控制器】 //springBoot才有
-      - //视频没看完；
+  - 欢迎页映射器 [静态]  WelcomePageHandlerMapping+ ResourceHttpRequestHandler+ SimpleControllerHandlerAdapter    //将访问根路径 / 的请求映射到欢迎页【可以是静态资源或者控制器，这里只讲静态资源】 //springBoot才有
+      - WelcomePageHandlerMapping中内置了一个handler，即ParameterizableViewController[内部实现了controller接口，所以后面适配器配合SimpleControllerHandlerAdapter]，作用是依据视图名找视图【视图名固定未forward:index.html】；找视图则用到了 ResourceHttpRequestHandler【第五组有用到，示例中配置的查找路径是static/】
+      - 对比组合一，区别在于映射的路径固定为forward:index.html 和  处理函数的形式  跳转到forward:index.html跳转过程进一步用到了处理函数 [静态资源对应的ResourceHttpRequestHandler] ）  //有一点视频没说清楚，需要额外自定义/**  对应的 ResourceHttpRequestHandler，  还是WelcomePageHandlerMapping有内置的声明了？看它设置resource的流程，应该是内置的；
+
+- ==MVC处理流程是怎么样的？==
+
+  - ==课程36总结得很烂，可以先看看javaGuide的流程，结合前面的课程做些扩充，最后结合36讲的总结做个补充；==
+
+- 如何搭建一个spring项目？
+
+  - 略，课程有骨架搭建  war项目搭建的流程；
+
+- 简单叙述springBoot的启动流程？
+
+  - SpringApplicaion.run --> new SpringApplication(primarySources).run(args);
+  - 主要内容分为两块，SpringApplication构造，调用run方法 【12大步骤 7大事件】
+  - 构造方法（准备工作，run方法创建spring容器）
+    - 获取Bean Definition源：配置类、xml文件等等；//引导类也是个配置类； 
+    - 推断应用类型：推断应用类型   springBoot支持三种应用类型：非web程序、基于servlet的web程序、reactive的web程序； 基于jar包中关键类判断属于哪一种，创建不同类型的ApplicationContext； //ClassUtils.isPresent 判断类路径下是否存在某个类
+    - ApplicationContext初始化器：可以添加初始化器对ApplicationContext添加扩展；//initialize方法的入参就是  applicationContext
+    - 监听器与事件：可以添加监听器 监听spring发布的事件 //入参event就是生成的事件
+    - 主类推断：推断主类即运行main方法的类；
+  - run方法
+    - 得到SpringApplicationRunListeners并发布 application starting事件 //名字取得不好，实际是事件发布器；该发布器还会在spring一些重要节点结束之后就发布事件，如开始启动、环境信息准备完毕等；
+    - 封装启动args：参数封装为ApplicationArguments【会把参数分为两类：分为选项参数，即--开头的  非选项参数】//默认会[调用new DefausltApplicationArguments()]把main的args封装为ApplicationRunner，第12步runner接口要用到；
+    - 准备Environment：
+      - 默认两个来源  propertySources：系统属性[VM option，例-Denv=FAT]、系统环境[操作系统的环境变量]； 
+      - approperties[后面添加]、命令行参数[prgram arguments，例如--server.port=7070]  [这里第三步添加]等人工的属性，可以手工添加新的来源；
+    - 4 添加ConfigurationPropertySources处理：
+      - 为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
+    - 5.发布application environment已准备事件后，nvironmentPostProcessorApplicationListener进行env后处理，补充propertySource[通过后处理器的方式，==application.propertiies对应的源、产生随机数的源等==]
 
 - #### spring AOP零碎知识：
 
