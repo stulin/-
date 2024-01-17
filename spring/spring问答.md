@@ -501,6 +501,7 @@
     - 4 添加ConfigurationPropertySources处理：
       - 为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
     - 5.发布application environment已准备事件后，nvironmentPostProcessorApplicationListener进行env后处理，补充propertySource[通过后处理器的方式，==application.propertiies对应的源、产生随机数的源等==]
+    - 6.properties配置文件中spring.main开头的键值绑定到程序的SpringApplicatin.java对象
 
 - #### spring AOP零碎知识：
 
