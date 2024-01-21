@@ -494,17 +494,51 @@
     - 主类推断：推断主类即运行main方法的类；
   - run方法
     - 得到SpringApplicationRunListeners并发布 application starting事件 //名字取得不好，实际是事件发布器；该发布器还会在spring一些重要节点结束之后就发布事件，如开始启动、环境信息准备完毕等；
-    - 封装启动args：参数封装为ApplicationArguments【会把参数分为两类：分为选项参数，即--开头的  非选项参数】//默认会[调用new DefausltApplicationArguments()]把main的args封装为ApplicationRunner，第12步runner接口要用到；
+    - 封装启动args：参数封装为ApplicationArguments【会把参数分为两类：分为选项参数，即--开头的  非选项参数】，第12步runner接口的run()要用到  //默认会[调用new DefausltApplicationArguments()]把main的args封装为ApplicationRunner；
     - 准备Environment：
       - 默认两个来源  propertySources：系统属性[VM option，例-Denv=FAT]、系统环境[操作系统的环境变量]； 
       - approperties[后面添加]、命令行参数[prgram arguments，例如--server.port=7070]  [这里第三步添加]等人工的属性，可以手工添加新的来源；
     - 4 添加ConfigurationPropertySources处理：
       - 为了使得getProperty能自动识别不同的分隔符    -、 _、 驼峰等，需要添加一个特殊的ConfigurationPropertySource；
-    - 5.发布application environment已准备事件后，nvironmentPostProcessorApplicationListener进行env后处理，补充propertySource[通过后处理器的方式，==application.propertiies对应的源、产生随机数的源等==]
+    - 5.发布application environment已准备事件后，environmentPostProcessorApplicationListener进行env后处理，补充propertySource[通过后处理器的方式，==application.propertiies对应的源、产生随机数的源等==]
     - 6.properties配置文件中spring.main开头的键值绑定到程序的SpringApplicatin.java对象
+    - 7.打印banner //可以自己指定banner
+    - 8-11:创建容器   准备容器（包括执行 容器的初始化器等）  加载bean定义 （主要包括三种： 配置类定义  bean、xml、包扫描）  refresh容器(beanFactory后处理器  bean后处理器 初始化单例等)
+    - 执行runner（ 内容可以自行确定，如可以用于预加载数据等）
+
+- spring结合tomcat的底层是怎么实现的？
+
+  - spring启动时电泳AbstractApplicationContext的onRefresh()方法时，会启动tomcat(在finishRefresh子方法中)；
+  - 启动tomcat的过程包括设置虚拟路径、磁盘路径、初始化器、连接器等；然后从springContext获取DispatcherServlet并添加到tomcat的ServletContext中，当请求匹配到dispatcherServlet的路径时，就会走spring后续流程；
+  - 补充说明
+    - tomcat能直接识别的只有三大组件，经过web.xml配置的 servlet、filter、listener[3.0之后可以不用配置，编程动态添加三大组件]，controller  service只能被三大组件调用；
+    -  几个术语的含义实例：context为tomcat中的概念，含义通常为一个应用；applicationContext是spring中的概念，含义通常是spring容器，内含所有的bean等信息；servletContext则是tomcat中的组件，含义是应用中包含的servlet等信息；
+
+- spring自动配置的底层原理是说明？如何自己添加第三方配置类？
+
+  - @Import + 自定义类实现 ImportSelector 接口+SpringFactoriesLoader读取配置文件信息；   
+    - 使用@Import注解：spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置，故要添加新的配置只需要三方包的spring.factories中配置即可；
+    -  ImportSelector 接口：【方法返回值就是配置类的类名形成的数组】
+  - springBoot：和spring略有不同，@Import+ ==DeferredImportSelector接口==+SpringFactoriesLoader读取配置文件信息+==@ConditioanalOnMissingBean== 
+    - 同一个bean不允许重复注册；使用DeferredImportSelector【推迟导入三方配置】故会先解析本项目的配置类；第三方bean添加@ConditioanalOnMissingBean 保证本项目没有时自动配置类第三方bean才生效；
+    - 上述三种策略就保证了同一个bean在三方和本项目都有的情况下，本项目生效；
+  - 补充说明1：配置类的本质：@Configuration注解修饰的Bean，但这些bean有一定通用性，不同项目都可以引入 ;
+  - spring自动配置相关的核心类：AopAutoConfiguration、DataSourceAutoConfiguration、MybatisAutoConfiguration、DataSourceTransactionManagerAutoConfiguration、ProxyTransactionManagementConfiguration？？？？？？？
+    - 以AopAutoConfiguration源码为例，则使用了大量的@ConditionalOnProperty、@ConditionalOnClass、@EnableAspectJAutoProxy等注解；  默认生效的是cglib代理
+    - 补充说明2：
+      - Enable打头的注解，本质上都是使用@Import注解进行配置导入，功能是编程的方式把bean的beanDefinition加入到容器
+      - @EnableAspectJAutoProxy：加入自动代理创建器，默认最终添加的是AnnotationAwareAspectJAutoProxyCreator.class； 
 
 - #### spring AOP零碎知识：
 
+  - 题外话：@SpringBootApplication注解
+    - @EnableAutoConfiguration导入自动配置，也是个组合注解
+      - @AutoConfigurationPackage：[register的第二个入参]，用来确定扫描范围，是前面记录的引导类的包名；
+    - @Component：组件扫描，@Component @Service @Controller  ;
+    - @SpringBootConfiguration表明这是个配置类；
+  - @EnableConfigurationProperties：注解中属性为 DataSourceProperties.class表示会new一个该对象，并会绑定键值信息——以spring.datasource打头键值绑定到上面创建的对象； 
+  - @ConditianalOnSingleCandidate 单一候选者； @AutoConfigureAfter表明了bean注入的先后顺序
+    - SqlSessionTemplate：实现了SqlSession，可以生成一个线程绑定的bean，即一个线程共用一个SqlSession;
   - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
     - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
