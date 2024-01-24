@@ -517,7 +517,7 @@
 - spring自动配置的底层原理是说明？如何自己添加第三方配置类？
 
   - @Import + 自定义类实现 ImportSelector 接口+SpringFactoriesLoader读取配置文件信息；   
-    - 使用@Import注解：spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置，故要添加新的配置只需要三方包的spring.factories中配置即可；
+    - 使用@Import注解：spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置，==故要添加新的配置只需要三方包的spring.factories中配置即可，注意@EnableAutoConfiguration获取的配置的key是org.springframework.boot.autoconfigure.EnableAutoConfiguration；==
     -  ImportSelector 接口：【方法返回值就是配置类的类名形成的数组】
   - springBoot：和spring略有不同，@Import+ ==DeferredImportSelector接口==+SpringFactoriesLoader读取配置文件信息+==@ConditioanalOnMissingBean== 
     - 同一个bean不允许重复注册；使用DeferredImportSelector【推迟导入三方配置】故会先解析本项目的配置类；第三方bean添加@ConditioanalOnMissingBean 保证本项目没有时自动配置类第三方bean才生效；
@@ -525,7 +525,7 @@
   - 补充说明1：配置类的本质：@Configuration注解修饰的Bean，但这些bean有一定通用性，不同项目都可以引入 ;
   - spring自动配置相关的核心类：AopAutoConfiguration、DataSourceAutoConfiguration、MybatisAutoConfiguration、DataSourceTransactionManagerAutoConfiguration、ProxyTransactionManagementConfiguration？？？？？？？
     - 以AopAutoConfiguration源码为例，则使用了大量的@ConditionalOnProperty、@ConditionalOnClass、@EnableAspectJAutoProxy等注解；  默认生效的是cglib代理
-    - 补充说明2：
+    - 补充说明：
       - Enable打头的注解，本质上都是使用@Import注解进行配置导入，功能是编程的方式把bean的beanDefinition加入到容器
       - @EnableAspectJAutoProxy：加入自动代理创建器，默认最终添加的是AnnotationAwareAspectJAutoProxyCreator.class； 
 
