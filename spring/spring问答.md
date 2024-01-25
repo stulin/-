@@ -299,6 +299,14 @@
 
       \- 动态通知：通知方法有入参，需要参数绑定，执行时需要切点；
 
+- spring生成的代理对象有什么特点？
+
+    - spring自动 依赖注入和初始化使用的是目标对象方法； 生成代理对象之后，切点才会生效；
+      - 例：bean1注入bean2，且有一个初始化方法；创建一个切面类切点为bean1所有方法；context中获取bean1对象的时候会发现：spring自动  针对bean2的注依赖入和初始化都没有被增强；
+  - 代理对象和目标对象并不公用属性
+    - 可以发现代理对象的两个属性均为空值，但是目标对象有值，因为依赖注入和初始化针对目标对象；  代理对象的getBean2()  isInitialized()等方法底层调用的还是目标对象的属性；
+  -  static方法  final方法  private方法 无法被增强，只有可以被重写的方法能被增强；
+
 - tomcat、dispatcherServlet之间是什么关系？
 
   - spring要支持web容器，配置类有三项必须配置：内嵌web容器工厂、DispatcherServelet的Bean定义，注册bean[用于把DispatcherServlet注册到Tomcat]。其中DispatcherServelet是spring容器创建，但是初始化在tomcat完成[tomcat容器默认在首次使用dispatcherServlet的时候初始化，初始化时机可通过loadOnsStartup配置]，是springMVC程序的入口点。
@@ -514,7 +522,7 @@
     - tomcat能直接识别的只有三大组件，经过web.xml配置的 servlet、filter、listener[3.0之后可以不用配置，编程动态添加三大组件]，controller  service只能被三大组件调用；
     -  几个术语的含义实例：context为tomcat中的概念，含义通常为一个应用；applicationContext是spring中的概念，含义通常是spring容器，内含所有的bean等信息；servletContext则是tomcat中的组件，含义是应用中包含的servlet等信息；
 
-- spring自动配置的底层原理是说明？如何自己添加第三方配置类？
+- spring自动配置的底层原理是说明？如何自己添加第三方配置类？如何在自己添加第三方配置类的基础上引入条件装配？
 
   - @Import + 自定义类实现 ImportSelector 接口+SpringFactoriesLoader读取配置文件信息；   
     - 使用@Import注解：spring不仅会自动扫描当前项目的spring.fatories文件、而且会找所有jar包目录的spring.factories的配置，==故要添加新的配置只需要三方包的spring.factories中配置即可，注意@EnableAutoConfiguration获取的配置的key是org.springframework.boot.autoconfigure.EnableAutoConfiguration；==
@@ -523,11 +531,26 @@
     - 同一个bean不允许重复注册；使用DeferredImportSelector【推迟导入三方配置】故会先解析本项目的配置类；第三方bean添加@ConditioanalOnMissingBean 保证本项目没有时自动配置类第三方bean才生效；
     - 上述三种策略就保证了同一个bean在三方和本项目都有的情况下，本项目生效；
   - 补充说明1：配置类的本质：@Configuration注解修饰的Bean，但这些bean有一定通用性，不同项目都可以引入 ;
+  - 自己添加第三方配置类的基础上引入条件装配：上述自动配置 + @Conditianal + 自定义类实现Condition接口进行条件判断（需要重写matches方法）
+    - matches方法的入参可以提供一些必要的信息，如通过context获取beanFactory信息；metadata获取类的注解信息；
   - spring自动配置相关的核心类：AopAutoConfiguration、DataSourceAutoConfiguration、MybatisAutoConfiguration、DataSourceTransactionManagerAutoConfiguration、ProxyTransactionManagementConfiguration？？？？？？？
     - 以AopAutoConfiguration源码为例，则使用了大量的@ConditionalOnProperty、@ConditionalOnClass、@EnableAspectJAutoProxy等注解；  默认生效的是cglib代理
     - 补充说明：
       - Enable打头的注解，本质上都是使用@Import注解进行配置导入，功能是编程的方式把bean的beanDefinition加入到容器
       - @EnableAspectJAutoProxy：加入自动代理创建器，默认最终添加的是AnnotationAwareAspectJAutoProxyCreator.class； 
+
+- ----选//spring中如何自定义和工厂类？
+
+  - 首先编写Bean1的类定义，然后在Bean1FactoryBean的类定义上添加注解 @Bean("bean1")
+      - 工厂Bean要实现三个方法，getObjectType 返回产品类型[getBean  依据类型获取时用到]； isSingleton  产品是单例还是多例； getObject 提供产品对象； 
+      - 产品如果单例不会入beanFactory的单例池singleObjects，会放在factoryBeanObjectCache；
+      - factory bean是spring创建的，但是产品时 factory bean调用bean1的构造创建的【不是spring创建的】，所以依赖注入 aware回调 初始化都不生效，但是bean初始化后的后处理器器会生效【代理就是初始化后增强】；
+
+  - spring是如何实现包扫描的？spring是如何提升包扫描的效率的？
+
+      - 编译阶段就实现扫描，减少扫描时间。
+      - 编译阶段，去找包含@Indexed注解的类[@Coponent的父注解]，然后添加到spring.components  //需要添加依赖spring-context-indexer
+      - spring5.0之后，scan方法在找不到spring.components文件的情况下（找到了就不扫描Jar包和类），才会真正去做包扫描 //target--classes--META-INF，spring.components文件 //spring组件扫描效率很低；
 
 - #### spring AOP零碎知识：
 
