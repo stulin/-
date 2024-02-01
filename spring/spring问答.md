@@ -49,7 +49,25 @@
   - @Autowired解析时通过bean后处理器是实现的[AutowiredAnnotationBeanPostProcessor]，主要包括三步，首先，找到所有添加了@Autowired注解的方法，并封装为InjectionMeradata对象[findAutowiringMetadata]；接着调用metadata.inject方法进行依赖注入；
   - 进一步模拟Inject方法的实现，难点在于依据类型从beanFactory中获取bean对象：beanFactory.doResolveDepedency //==doResolveDepedency和geBean的区别是什么？doResolveDepedency是在beanFacotry中还没有的情况下，生成bean对象（很可能还会注入beanFactory），getBean是在beanFacotry中依据有对象的情况下，直接获取，可能会获取到null==
   
+- --46讲补充 //spring中@Value注解解析的底层原理？
+  
+  - @Value注解支持 “”, ${}, #{}, @Bean3等多种形式的数据注入，底层使用的ContextAnnotationAutowireCandidateResolver，只是不同的数据注入使用了不同的方法，如getSuggestedValue  resolvePlaceholders  getTypeConvertIfNecessary  evaluate等；
+  
+- --47讲补充@Autowired注入底层原理是什么？
+
+    - @Autowired四种用法：依据成员变量的类型注入；依据参数的类型注入；结果包装为Optional<Bean2>； 结果包装为ObjectProvider、ObjectFactory； 
+        - 最终都是调用beanFactory的doResolveDependency()方法；  场景3 需要获取内层类型; 场景4 也需要获取内层类型，且封装为工厂，真正的注入可以在工厂的getObject()方法中实现，达到延迟注入的目的；
+      - /////配合@Lazy的情况：@Lazy可以加成员变量或者方法参数，作用是 会创建代理对象，访问对象方法时才会创建目标对象，达到延迟注入的效果； 最终调用的是 ContextAnnotationAutowireCandidateResolver. getLazyResolutionProxyIfNecessary()
+      - @Autowired  依据成员变量的类型注入 五种特殊的用法：成员变量类型为Service[] 【自定义对象数组】; List<Service> 【自定义对象的List】; 特殊类型如 ConfigurableApplicationContext;  Dao<Teacher> 【自定义对象中包含泛型】; 配合注解Qualifier使用;  配合注解@Primary【一个接口多个实现类的情况】
+      - doResolveDependency解析原理
+          - 一般的成员变量类型注入及物种特殊用法的前两种， 最后调用  dd1.resolverCandidaete() 或者beanFactory.getBean() ；只是不同的情境有不同的预处理，比如注入对象数组，则需要先获取数组中泛型类型，然后去beanFactory中寻找可能符合要求的所有bean，然后逐一调用dd1.resolverCandidaete()；
+          - 对于特殊类型如如ApplicationContext的子接口，无法通过getBean方法获取，可以反射获取，保存在DefaultListableBeanFactory的属性resoleableDependencies中
+          - //对于自定义对象中包含泛型的情况，匹配beanFactory中对象的时候需要额外比对泛型信息，需要调用isAutowreCandidate（）//这里dd4对应的dao属性没有@Qualifier，所以会默认省略对比  bean的名字；
+          - //配合注解Qualifier使用情况，同样要调用isAutowreCandidate（），而且会额外比对beanName
+          - //配合注解@Primary  beanDefinition有一个成员变量标记了是否为Primary对象;一个接口多个实现类的情况，如果同时没有@qualifier  @Primary  ，会优先选择和变量名匹配的 如下面的情况会注入service3对象，==优先级@qualifier>  @Primary > 成员变量名字==
+
 - @ComponentScan解析底层原理？如何自己实现解析@ComponentScan？
+  
   - 1. 获取类上的注解对象 AnnotationUtils.findAnnotation(clazz class, clazz annotation); 2 依据注解中的包名获取对应的类资源[class文件]context.getResources(path)； 3 依据class文件获取类的信息和注解的信息 CachingMetadataReaderFactory.getMetadataReader   MeradataReader.getAnnotationMetadata 4.如果类上包含@Component或者类中方法上包含@Component的子注解(hasMetaAnnotation)，则依据类信息生成BeanDefinition[BeanDefinitionBuilder.genericBeanDefinition().getBeanDefinition]并注册到beanFactory[beanFactory.registerBeanDefinition]
   - tips: AnnotationBeanNameGenerator解析@Component获取bean的名字；一个类实现BeanFactoryPostProcessor并且注册到beanFactory，它的postProcessBeanFactory方法会在refresh的时候回调 
   
@@ -546,11 +564,33 @@
       - 产品如果单例不会入beanFactory的单例池singleObjects，会放在factoryBeanObjectCache；
       - factory bean是spring创建的，但是产品时 factory bean调用bean1的构造创建的【不是spring创建的】，所以依赖注入 aware回调 初始化都不生效，但是bean初始化后的后处理器器会生效【代理就是初始化后增强】；
 
-  - spring是如何实现包扫描的？spring是如何提升包扫描的效率的？
+- spring是如何实现包扫描的？spring是如何提升包扫描的效率的？
 
-      - 编译阶段就实现扫描，减少扫描时间。
-      - 编译阶段，去找包含@Indexed注解的类[@Coponent的父注解]，然后添加到spring.components  //需要添加依赖spring-context-indexer
-      - spring5.0之后，scan方法在找不到spring.components文件的情况下（找到了就不扫描Jar包和类），才会真正去做包扫描 //target--classes--META-INF，spring.components文件 //spring组件扫描效率很低；
+    - 编译阶段就实现扫描，减少扫描时间。
+    - 编译阶段，去找包含@Indexed注解的类[@Coponent的父注解]，然后添加到spring.components  //需要添加依赖spring-context-indexer
+    - spring5.0之后，scan方法在找不到spring.components文件的情况下（找到了就不扫描Jar包和类），才会真正去做包扫描 //target--classes--META-INF，spring.components文件 //spring组件扫描效率很低；
+    
+- 事件--监听器有什么应用场景？spring监听器底层原理是什么？
+
+    - 常用于 业务代码的解耦；例——实现接口写法：主线业务  与 发送短信  发送邮件 解耦；
+
+          - 完成主线业务后，发布一个MyEvent (继承ApplicationEvent)事件
+          - 创建两个监听器，实现 ApplicationListener<MyEvent>  接口，监听到事件后会回调onApplicationEvent方法；
+          - 补充：监听器也可以用@EventListener代替实现接口； 默认事件发布时单线程，需要多线程发布可以自己注入bean  SimpleApplicationEventMulticaster
+
+      - @EventListener底层原理？
+
+          - 本质还是借助ApplicationListener实现； context找到带有@EventListener注解的所有方法，创建ApplicationListener对象，并将生成的ApplicationListener添加到context中
+          - 配合SmartInitializingSingleton的afterSingletonsInstantiated使用即可处理context中所有的bean，该方法在所有单例初始化后回调，在refresh()中执行；
+
+      - ////再往下挖，为什么实现ApplicationListener  并通过  SimpleApplicationEventMulticaster 发布即可，或者说spring如何 把发布器---事件----监听器联系在一起的？其实就是下一问如何自己实现，我能想到的另一种实现方式是代理模式：找到所有的发布器，对发布方法做增强，增强的内容就是该发布器对应监听器的监听方法。
+
+      - ==自己实现一个事件发布器==：实现抽象类 AbstractApplicationEventMulticaster，重写两个方法；一个方法收集监听器，另一个方法发布事件
+
+          - 收集监听器：从context中获取所有的监听器，筛选出 事件类型 和当前发布器匹配的（具体可以通过疯转为genricApplicationListener实现筛选）
+          - 发布事件：对于符合条件的监听器List，逐个调用listener.onApplicationEvent
+
+        
 
 - #### spring AOP零碎知识：
 
@@ -562,7 +602,12 @@
   - @EnableConfigurationProperties：注解中属性为 DataSourceProperties.class表示会new一个该对象，并会绑定键值信息——以spring.datasource打头键值绑定到上面创建的对象； 
   - @ConditianalOnSingleCandidate 单一候选者； @AutoConfigureAfter表明了bean注入的先后顺序
     - SqlSessionTemplate：实现了SqlSession，可以生成一个线程绑定的bean，即一个线程共用一个SqlSession;
-  - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
+  - 注解相关的方法
+    - AnnotationUtils.findAnnotation注解会递归查找某个注解，即包含一个该注解的子注解也算【如@RestController同时包含了@Controller和@ResponseBody】；getContainingClass获取包含该 返回结果-对应方法-所在类
+    - method.isAnnotationPresent(MyListener.class)：判断方法上是否有自定义的MyListener注解
+  - 类型判断相关方法
+    - eventType.isAssignableFrom( event.getClass() )  //入参是否可以赋值给当前类型，相当于问入参是不是当前类型的子类
+    - ResolvableType.forClass 可以解析类型(结果封装为ResolvableType)，getInterfaces()获取所有的接口，getGeneric()获取接口的泛型信息；
   - 一个方法匹配多个切面时如何设置切面的生效顺序？高级切面和低级切面的顺序设置方法如下：
     - 高级切面 @Order； //加在方法上无效，故单个类内的不同方法的顺序无法控制
     - 低级切面：advisor.setOrder   ; //@Bean方法上的 @Order 无法生效；
