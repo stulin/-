@@ -14,6 +14,37 @@ http  https仔细学习下！！！！很实用啊；
 
 
 
+#### 面试角度的问题梳理
+
+- 简单介绍你对nginx的了解？nginx相比其它web服务器有什么优缺点？
+  - nginx是具有高性能  HTTP 和 反向代理 功能的WEB服务器，也是一个 POP3/SMTP/IMAP代理服务器；
+  - nginx主要具有：速度快，并发高[多进程和I/O多路复用]，高可靠，轻量级别 等优点 //[配置简单，扩展性好；热部署；成本低 BSD许可]
+    - tomcat对态文件和高并发处理能力弱【200-300并发量】；
+    - Apache：重量级、不支持高并发
+    - Lighttpd：轻量级、高性能，欧美青睐
+
+- ==什么是正向代理，什么是反向代理？==
+  - 架设位置不同[客户端  服务端]；
+  - 隐藏对象不同【正向隐藏了客户端---即客户端访问的目的地址是服务器[即客户端需要知道服务器的ip，因为代理在客户端]，访问服务端的是代理 ;  反向隐藏了服务端---即客户端访问的目的地址是代理服务器[即服务端需要知道客户端的ip，因为代理在服务端]；
+  - 目的不同【正向 解决访问限制问题； 反向 负载均衡和安全防护】
+- nginx的核心文件？核心路径？
+  - nginx二进制可执行文件、nginx.conf配置文件、error.log、access.log
+  - /nginx/sbin 二进制启动文件； /nginx/logs [内含nginx主进程id];  /nginx/html [访问成功、失败的页面]
+- nginx启动、重启和停止nginx服务？
+  - 信号控制（向master发送信号）：ps -ef | grep nginx获取master的PID； kill -signal PID
+  - 命令行控制：/sbin/nginx -h查看支持参数；-c指定nginx配置文件路径；//还有-tc等；
+    - 日常使用，直接可以用重启命令  ./nginx  -s quit ;  ./nginx -c  .....;   ./nginx -s reload
+- nginx架构（高可靠的原理、平滑升级的原理）
+  - 一个master进程和多个worker进程；master接收外界信息，发送给worker，监控worker状态，worker异常退出后，master会重新启用鑫的worker，由worker处理用户请求。
+  - 先发送USR2信号，启动新的master和worker；如何发送QUIT给旧的master处理完请求关闭；
+- nginx配置文件组成？
+  - 默认三大块：全局块、events块、http块
+    - http块可以配置多个server块，每个server块可以配置多个location块；
+  - 全局块指令
+    - user  user1：配置运行work进程的用户及用户组；例如：按照前面的配置只能访问/home/user1目录的权限 //有点迷糊，例子只配置了用户吧？没有用户组？
+    - master process ; worker process (建议和cpu核心数保持一致)
+    - 其它：daemon、pid、error_log、include
+
 ### Nginx简介
 
 #### 背景介绍
