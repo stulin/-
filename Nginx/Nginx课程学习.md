@@ -232,6 +232,29 @@ http  https仔细学习下！！！！很实用啊；
     - ![image-20240215211102831](Nginx课程学习.assets/image-20240215211102831.png)
     - ![image-20240215211121188](Nginx课程学习.assets/image-20240215211121188.png)
     - ![image-20240215210957037](Nginx课程学习.assets/image-20240215210957037.png)
+- 设置请求资源的目录
+  - root / alias :都可以指定资源路径；root的处理结果是 root路径+location路径；alias的处理结果是alias路径替换location路径（所以location后面的路径末尾带/的话，alias末尾也要加/）
+    - ![image-20240216170929587](Nginx课程学习-photos/image-20240216170929587.png)
+    - ![image-20240216171416832](Nginx课程学习-photos/image-20240216171416832.png)
+  - index : 设置location等的默认主页
+    - ![image-20240217195332059](Nginx课程学习-photos/image-20240217195332059.png)
+  - error_page： 设置错误页面，可以跟域名、重定向地址、自定义展示错误信息、自定义返回的状态码；
+    - ![image-20240217200008415](Nginx课程学习-photos/image-20240217200008415.png)
+    - ![image-20240217200149194](Nginx课程学习-photos/image-20240217200149194.png)
+    - ![image-20240217200238229](Nginx课程学习-photos/image-20240217200238229.png)
+- 静态资源优化配置指令
+  - sendfile
+    - http底层是tcp, tcp底层是socket;  sendfile是操作系统底层的一个函数；一般操作系统不允许应用程序直接读磁盘，认为不安全；
+    - ![image-20240217231139494](Nginx课程学习-photos/image-20240217231139494.png)
+    - 未使用sendfile时访问静态资源流程很长，nginx应用程序发送read指令；磁盘拷贝文件到内核缓冲区；内核缓冲区拷贝文件到应用程序缓冲区；nginx应用程序发送write指令；应用程序缓冲区拷贝文件到socket缓冲区；socket缓冲区拷贝文件到网卡；最后由网卡发送到浏览器；
+    - ![image-20240217230548319](Nginx课程学习-photos/image-20240217230548319.png)
+    - sendfile可以指定最终要交给的socket；可以直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器；少了两次拷贝和  内核态/用户态的切换；
+    - ![image-20240217231121164](Nginx课程学习-photos/image-20240217231121164.png)
+  - tcp_nopush   tcp_nodelay
+  - ![image-20240217232612885](Nginx课程学习-photos/image-20240217232612885.png)
+  - ![image-20240217232527734](Nginx课程学习-photos/image-20240217232527734.png)
+  - 如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低；
+  - ![image-20240217232326576](Nginx课程学习-photos/image-20240217232326576.png)
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
