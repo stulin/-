@@ -255,6 +255,19 @@ http  https仔细学习下！！！！很实用啊；
   - ![image-20240217232527734](Nginx课程学习-photos/image-20240217232527734.png)
   - 如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低；
   - ![image-20240217232326576](Nginx课程学习-photos/image-20240217232326576.png)
+- 静态资源压缩
+  - ![image-20240218202838463](Nginx课程学习-photos/image-20240218202838463.png)
+  - //浏览器缓存开启时，走缓存的话大小可能会显示很小；
+  - gzip开启gzip功能； gzip_types指定要压缩的文件类型；gzip_comp_level指定压缩程度；gzip_vary 是否通过添加返回头中字段的形式告诉前端资源经过了压缩；gzip_buffers设置压缩缓冲区的数量和每个缓冲区的大小，和操作系统相关，一般采用默认即可；gzip_disable 针对不同种类客户端发起的请求，选择性地关闭Gzip功能；gzip_http_version 开启Gzip功能所需的最低版本http协议，一般默认；gzip_min_length 开启压缩最小的文件大小 bytes/kb/M（一般1k以上），和请求头的content-type比较；gzip_proxied 反向代理的过程中，是否对服务器返回的资源进行压缩
+    - ![image-20240218204132970](Nginx课程学习-photos/image-20240218204132970.png)
+    - ![image-20240218204155048](Nginx课程学习-photos/image-20240218204155048.png)
+    - ![image-20240218204401167](Nginx课程学习-photos/image-20240218204401167.png)
+    - ![image-20240218204734840](Nginx课程学习-photos/image-20240218204734840.png)
+    - ![image-20240218204827162](Nginx课程学习-photos/image-20240218204827162.png)
+    - ![image-20240218205155451](Nginx课程学习-photos/image-20240218205155451.png)
+    - ![image-20240218205743022](Nginx课程学习-photos/image-20240218205743022.png)
+    - ![image-20240218205946845](Nginx课程学习-photos/image-20240218205946845.png)
+    - ![image-20240218210335038](Nginx课程学习-photos/image-20240218210335038.png)
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
