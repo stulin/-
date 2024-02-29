@@ -268,11 +268,60 @@ http  https仔细学习下！！！！很实用啊；
     - ![image-20240218205743022](Nginx课程学习-photos/image-20240218205743022.png)
     - ![image-20240218205946845](Nginx课程学习-photos/image-20240218205946845.png)
     - ![image-20240218210335038](Nginx课程学习-photos/image-20240218210335038.png)
+  - gzip使用示例
+    - ![image-20240229183623532](Nginx课程学习-photos/image-20240229183623532.png)
+  - gzip_static
+    - 解决Gzip和senfile共存的问题，使用sendfile之后，静态资源获取就不会经过应用程序（见前文，直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器）；但是压缩这个操作是要应用程序进行的。为了保证senfile和Gzip共存，一般是提前手动把静态资源压缩好（.gz文件），保存在磁盘，当gzip生效时就可以直接去找.gz文件
+    - ![image-20240229184851933](Nginx课程学习-photos/image-20240229184851933.png)
+    - on则gzip_http_version配置生效，always则永远生效
+- 番外：nginx重新编译 增加新的模块
+  - 注：第六步还需要补充第一步查询得到的参数；第8步需要在安装目录下执行；
+  - ![image-20240229185518428](Nginx课程学习-photos/image-20240229185518428.png)
+  - ![image-20240229185544884](Nginx课程学习-photos/image-20240229185544884.png)
+
+### web缓存
+
+- 缓存概念
+
+  - ![image-20240229191209130](Nginx课程学习-photos/image-20240229191209130.png)
+  - ![image-20240229191323792](Nginx课程学习-photos/image-20240229191323792.png)
+
+- 缓存种类
+
+  - ![image-20240229191359430](Nginx课程学习-photos/image-20240229191359430.png)
+
+- 浏览器缓存
+
+  - ![image-20240229191531153](Nginx课程学习-photos/image-20240229191531153.png)
+
+  - ![image-20240229192800899](Nginx课程学习-photos/image-20240229192800899.png)
+
+  - ![image-20240229192724945](Nginx课程学习-photos/image-20240229192724945.png)
+
+  - 强缓存：缓存未过期直接取浏览器缓存；弱缓存，缓存过期，还需要发请求到服务端确认Tag  Last-Modified没有变化，服务端返回一个304然后才能取浏览器缓存
+
+    - F5或者刷新都会使得强缓存失效；验证强缓存需要新开一个tab   //验证缓存时，disable cahce注意配置；
+
+  - expires指令
+
+    - //time默认时服务端时间而且时格林尼治时间；max-age  expire都标志超时时间，但是expire在客户端  服务端时针不一致的时候会有问题，两者同时存在时max-age优先生效；
+    - ![image-20240229195431960](Nginx课程学习-photos/image-20240229195431960.png)
+    - ![image-20240229195936647](Nginx课程学习-photos/image-20240229195936647.png)
+
+  - add header指令
+
+    - ![image-20240229200548426](Nginx课程学习-photos/image-20240229200548426.png)
+    - ![image-20240229200628833](Nginx课程学习-photos/image-20240229200628833.png)
+    - ![image-20240229200433735](Nginx课程学习-photos/image-20240229200433735.png)
+    - ![image-20240229200501963](Nginx课程学习-photos/image-20240229200501963.png)
+
+    
+
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
-
-
+  - gzip jquery.js  //压缩文件
+  - chrome清楚浏览器缓存：ctrl +shift +del;   
 
 
 
