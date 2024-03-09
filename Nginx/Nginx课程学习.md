@@ -341,12 +341,20 @@ http  https仔细学习下！！！！很实用啊；
     - ![image-20240305235725463](Nginx课程学习-photos/image-20240305235725463.png)
     - ![image-20240305235736213](Nginx课程学习-photos/image-20240305235736213.png)
 - 案例
-  - html引入nginx服务器资源
+  - html 引入nginx服务器资源
     - ![image-20240305235445069](Nginx课程学习-photos/image-20240305235445069.png)
   - ![image-20240306000209644](Nginx课程学习-photos/image-20240306000209644.png)
-- 不足：referer的限制比较粗，比如随意加一个Referer，上面的方式无法限制。需要使用三方模块： ngx_http_accesskey_module。
+- 不足：referer的限制比较粗粒度（一类文件或者是一个目录），比如随意加一个Referer，上面的方式无法限制。需要使用三方模块： ngx_http_accesskey_module。
 
+Rewrite功能配置
 
+- 一般用于URL重写，依赖PCRE库，Nginx使用的是ngx_http_rewrite_module模块来解析和处理Rewrite功能的相关配置
+- set指令
+  - ![image-20240309194950297](Nginx课程学习-photos/image-20240309194950297.png)
+  - ![image-20240309210606469](Nginx课程学习-photos/image-20240309210606469.png)
+  - ![image-20240309211432392](Nginx课程学习-photos/image-20240309211432392.png)
+  - ![image-20240309211635340](Nginx课程学习-photos/image-20240309211635340.png)
+- 
 
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
