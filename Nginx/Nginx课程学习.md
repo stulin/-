@@ -349,20 +349,33 @@ http  https仔细学习下！！！！很实用啊；
 Rewrite功能配置
 
 - 一般用于URL重写，依赖PCRE库，Nginx使用的是ngx_http_rewrite_module模块来解析和处理Rewrite功能的相关配置
+  - ![image-20240312223201493](Nginx课程学习-photos/image-20240312223201493.png)
 - set指令
   - ![image-20240309194950297](Nginx课程学习-photos/image-20240309194950297.png)
+  - rewrite常用全局变量
   - ![image-20240309210606469](Nginx课程学习-photos/image-20240309210606469.png)
   - ![image-20240309211432392](Nginx课程学习-photos/image-20240309211432392.png)
-  - ![image-20240309211635340](Nginx课程学习-photos/image-20240309211635340.png)
-- 
-
+  - 使用示例
+    - ![image-20240312223430350](Nginx课程学习-photos/image-20240312223430350.png)
+    - ![image-20240309211635340](Nginx课程学习-photos/image-20240309211635340.png)
+- if 指令
+  - if 和 (之间一定要有一个空格；字符串不需要加引号，并且等号和不等号前后都要加空格；
+  - ![image-20240312233038904](Nginx课程学习-photos/image-20240312233038904.png)
+  - ![image-20240312233425593](Nginx课程学习-photos/image-20240312233425593.png)
+  - ![image-20240312233618600](Nginx课程学习-photos/image-20240312233618600.png)
+  - 示例
+    - ![image-20240312233151423](Nginx课程学习-photos/image-20240312233151423.png)
+    - ![image-20240312233926603](Nginx课程学习-photos/image-20240312233926603.png)
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
   - gzip jquery.js  //压缩文件
   - chrome清楚浏览器缓存：ctrl +shift +del;   
 
-
+- 其它小技巧
+  - cmd发送post请求： curl -X POST http://192.168.200.133:8081/testif
+  - chmod 777的含义：http://www.mobiletrain.org/about/BBS/256716.html
+  - 查看用户分组信息：cat /etc/group  http://www.mobiletrain.org/about/BBS/150835.html
 
 
 
