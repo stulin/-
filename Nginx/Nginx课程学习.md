@@ -366,16 +366,39 @@ Rewrite功能配置
   - 示例
     - ![image-20240312233151423](Nginx课程学习-photos/image-20240312233151423.png)
     - ![image-20240312233926603](Nginx课程学习-photos/image-20240312233926603.png)
+- break
+  - nginx默认配置  root:当前目录下的html; index:当前目录下的index；一个作用域就是指一个{}的范围内；终止当前匹配就是不继续走当前location的后面return逻辑（不只是当前作用域了）
+  - ![image-20240313181953981](Nginx课程学习-photos/image-20240313181953981.png)
+  - ![image-20240313183741868](Nginx课程学习-photos/image-20240313183741868.png)
+- return
+  - ![image-20240313194544634](Nginx课程学习-photos/image-20240313194544634.png)
+  - ![image-20240313194851020](Nginx课程学习-photos/image-20240313194851020.png)
+- rewrite指令
+  - ![image-20240313195346831](Nginx课程学习-photos/image-20240313195346831.png)
+  - ![image-20240313200110465](Nginx课程学习-photos/image-20240313200110465.png)
+  - flag: 设置rewrite对URI的处理行为，分 last(用新URI在当前server中匹配) 、 break（用新URI在当前location中匹配）、  redirect（用新URI在当前server中匹配+301重定向)、  permanent（用新URI在当前server中匹配+302重定向）
+    - ![image-20240313201411531](Nginx课程学习-photos/image-20240313201411531.png)
+    - ![image-20240313201429779](Nginx课程学习-photos/image-20240313201429779.png)
+    - ![image-20240313201454615](Nginx课程学习-photos/image-20240313201454615.png)
+    - ![image-20240313201517413](Nginx课程学习-photos/image-20240313201517413.png)
+- rewrite_log
+  - ![image-20240313202746590](Nginx课程学习-photos/image-20240313202746590.png)
+- rewrite的案例
+  - 域名跳转：例如让www.360buy.com也重定向到www.jd.com
+    - rewrite ^后面不跟任何就代表对server_name后面的内容没有任何限制，(.*)是为了重定向的时候把后面的uri一起带过来
+    - ![image-20240313204404229](Nginx课程学习-photos/image-20240313204404229.png)
+  - 域名镜像：和镜像网站类似，完全相同的网站放置到几台服务器上，实现 高可用、分布不同地区以提高响应速度、流量负载、不同镜像不同域名防止域名限制。上述的www.itheima.com  www.itheima.cn 都跳转www.itcast.cn，则www.ticast.cn就是主域名，另外两个就是镜像域名。也可以只对一个子目录资源做镜像，可以在location配置write功能。
+    - ![image-20240313205539654](Nginx课程学习-photos/image-20240313205539654.png)
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
   - gzip jquery.js  //压缩文件
   - chrome清楚浏览器缓存：ctrl +shift +del;   
-
 - 其它小技巧
   - cmd发送post请求： curl -X POST http://192.168.200.133:8081/testif
   - chmod 777的含义：http://www.mobiletrain.org/about/BBS/256716.html
   - 查看用户分组信息：cat /etc/group  http://www.mobiletrain.org/about/BBS/150835.html
+  - break是301永久重定向；return是302临时重定向（重写地址是临时过渡的，和搜索引擎优化 su? 相关）  ;重定向跳转地址会变；
 
 
 
