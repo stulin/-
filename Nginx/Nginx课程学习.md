@@ -150,20 +150,24 @@ http  https仔细学习下！！！！很实用啊；
 
 ![image-20220605230219200](Nginx课程学习-photos/image-20220605230219200.png)
 
-#### Nginx系统环境准备
+### Nginx系统环境准备
 
-### Nginx全局指令
+//用到时再参考视频即可；
+
+### nginx.conf文件结构及其中的指令
+
+//user work_process  daemon pid error_log等指令直接见思维导图
 
 #### Events
 
-- accept_mutex：解决惊群问题
-  - 设置为off 会激活所有的worker进程
+- accept_mutex：对多个nginx进程接收连接进行序列化，即当一个请求到达时只唤醒一个work进程；设置为on只唤醒一个
+  - 解决惊群问题，即一个请求到达时是唤醒多个work进程(性能低)还是一个
   - ![image-20240214145707059](Nginx课程学习.assets/image-20240214145707059.png)
 - Multi_accept：worker进程是否同时接收多个网络了解
   - ![image-20240214145807456](Nginx课程学习.assets/image-20240214145807456.png)
-- Worker connections
+- Worker connections：设置单个worker进程的最大连接数(指的是所有连接数且不大于操作系统支持打开的最大文件句柄数量)
   - ![image-20240214150045713](Nginx课程学习.assets/image-20240214150045713.png)
-- use
+- use:nginx服务器选择那种事件驱动处理网络消息，可选select/poll/epoll/kqueue
   - ![image-20240214150214120](Nginx课程学习.assets/image-20240214150214120.png)
 
 #### http块
@@ -340,13 +344,15 @@ http  https仔细学习下！！！！很实用啊；
   - 指令：vilid_referers
     - ![image-20240305235725463](Nginx课程学习-photos/image-20240305235725463.png)
     - ![image-20240305235736213](Nginx课程学习-photos/image-20240305235736213.png)
+    - 扩展：可以结合后面的rewrite指令提升用户体验，403时给提示信息
+      - ![image-20240317105517016](Nginx课程学习-photos/image-20240317105517016.png)
 - 案例
   - html 引入nginx服务器资源
     - ![image-20240305235445069](Nginx课程学习-photos/image-20240305235445069.png)
   - ![image-20240306000209644](Nginx课程学习-photos/image-20240306000209644.png)
 - 不足：referer的限制比较粗粒度（一类文件或者是一个目录），比如随意加一个Referer，上面的方式无法限制。需要使用三方模块： ngx_http_accesskey_module。
 
-Rewrite功能配置
+### Rewrite功能配置
 
 - 一般用于URL重写，依赖PCRE库，Nginx使用的是ngx_http_rewrite_module模块来解析和处理Rewrite功能的相关配置
   - ![image-20240312223201493](Nginx课程学习-photos/image-20240312223201493.png)
@@ -374,6 +380,7 @@ Rewrite功能配置
   - ![image-20240313194544634](Nginx课程学习-photos/image-20240313194544634.png)
   - ![image-20240313194851020](Nginx课程学习-photos/image-20240313194851020.png)
 - rewrite指令
+  - rewrite后面的正则表达式中包含（），后面编写重写目的地址的时候可以用 \$1、 \$2等引用
   - ![image-20240313195346831](Nginx课程学习-photos/image-20240313195346831.png)
   - ![image-20240313200110465](Nginx课程学习-photos/image-20240313200110465.png)
   - flag: 设置rewrite对URI的处理行为，分 last(用新URI在当前server中匹配) 、 break（用新URI在当前location中匹配）、  redirect（用新URI在当前server中匹配+301重定向)、  permanent（用新URI在当前server中匹配+302重定向）
@@ -389,12 +396,26 @@ Rewrite功能配置
     - ![image-20240313204404229](Nginx课程学习-photos/image-20240313204404229.png)
   - 域名镜像：和镜像网站类似，完全相同的网站放置到几台服务器上，实现 高可用、分布不同地区以提高响应速度、流量负载、不同镜像不同域名防止域名限制。上述的www.itheima.com  www.itheima.cn 都跳转www.itcast.cn，则www.ticast.cn就是主域名，另外两个就是镜像域名。也可以只对一个子目录资源做镜像，可以在location配置write功能。
     - ![image-20240313205539654](Nginx课程学习-photos/image-20240313205539654.png)
+  - 独立域名：为每一个功能模块设置独立的域名
+    - ![image-20240316203612266](Nginx课程学习-photos/image-20240316203612266.png)
+  - 目录自动添加  ”/“
+    - 访问url不加斜杆，Nginx服务器内部会自动做一个301的重定向；如果重定向开关（serve_name_in_redirect）打开，目的地址（如果是nginx服务器）会被替换为server_name。nginx 0.8.48以前开关都是on，需要处理
+    - ![image-20240316215945986](Nginx课程学习-photos/image-20240316215945986.png)
+    - ![image-20240316220003452](Nginx课程学习-photos/image-20240316220003452.png)
+    - \$request_filename   \$host  \$server等都是全局变量； 下面的\[^/] 表示    去匹配最后一个字符且最后一个字符不能为空
+    - ![image-20240316222108022](Nginx课程学习-photos/image-20240316222108022.png)
+  - 合并目录
+    - 搜索引擎优化（SEO）是一种利用搜索引擎的搜索规则提高目的网站在搜索引擎内排名的方式（简单举例就是 提升你在百度搜索结果的排名），其中一项就是URL目录层级不超过三级（过低 [即大量文件放一个目录] 的话有会有文件资源管理混乱+访问文件速度下降）。
+    - 访问的时候通过名字添加 - 的方式降低目录层级，真正保存的时候一个 - 就是一个目录层级；
+    - ![image-20240316224740173](Nginx课程学习-photos/image-20240316224740173.png)
+    - ![image-20240316224803131](Nginx课程学习-photos/image-20240316224803131.png)
 - vim小技巧
   - set nu;显示行号       31,36d；删除31-36行；
   - Control  v+选中多行+i+ #/d +esc，
   - gzip jquery.js  //压缩文件
   - chrome清楚浏览器缓存：ctrl +shift +del;   
 - 其它小技巧
+  - tree展示文件目录
   - cmd发送post请求： curl -X POST http://192.168.200.133:8081/testif
   - chmod 777的含义：http://www.mobiletrain.org/about/BBS/256716.html
   - 查看用户分组信息：cat /etc/group  http://www.mobiletrain.org/about/BBS/150835.html
