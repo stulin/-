@@ -172,24 +172,24 @@ http  https仔细学习下！！！！很实用啊；
 
 #### http块
 
-- include   default_type
+- include 引入外部的配置信息；   default_type 设置返回的结果类型
   - 支持的资源的类型   //mime.types保存了不同的资源和文件后缀的对应关系; application/octet-stream是二进制流的意思；
   - ![image-20240214151434395](Nginx课程学习.assets/image-20240214151434395.png)
   - ![image-20240214151927052](Nginx课程学习.assets/image-20240214151927052.png)
-- Access_log + log_format 
+- Access_log（设置nginx日志相关配置） + log_format（设置nginx日志的格式） 
   - Access_log用到的format需要用log_format提前声明
   - ![image-20240214153544620](Nginx课程学习.assets/image-20240214153544620.png)
   - ![image-20240214153623458](Nginx课程学习.assets/image-20240214153623458.png)
-- Keepalive_timeout    keepalive_request
+- sendfile(是否使用sendfile 传输文件)   Keepalive_timeout（设置长连接的超时时间，避免一个请求建立一个连接）    keepalive_request（一个keep-alive链接的使用次数）
   - ![image-20240214154251200](Nginx课程学习.assets/image-20240214154251200.png) 
   - ![image-20240214154216630](Nginx课程学习.assets/image-20240214154216630.png)
 
-#### server块和location块
+#### server块和location块概览
 
-- root
-  - 资源所在的目录
-- index
-  - 默认访问/时候对应的首页；资源要放在root指定的目录下；
+- listen  监听的端口；server_name  监听的端口/域名； local 监听的uri路径；
+- root 资源所在的目录
+- index默认访问/时候对应的首页；资源要放在root指定的目录下；
+- error_page   设置错误包含的状态码  跳转的错误页面
 
 #### nginx基础配置示例需求分析
 
