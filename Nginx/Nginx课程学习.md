@@ -214,7 +214,7 @@ http  https仔细学习下！！！！很实用啊；
 - Nginx静态资源的配置指令
   - listen    //nginx.org/en/docs 有语法等信息
     - ![image-20240215113735954](Nginx课程学习.assets/image-20240215113735954.png)
-  - Default server //访问的地址没配置server时会跳转到default server；没有配置default server的时候，默认第一个配置的server为default_server
+  - default server //访问的地址没配置对应的server时会跳转到default server；没有配置default server的时候，默认第一个配置的server为default_server
     - ![image-20240215120128301](Nginx课程学习.assets/image-20240215120128301.png)
   - server_name //域名解析及host配置的内容略，参考自己的笔记
     - ![image-20240215120645045](Nginx课程学习.assets/image-20240215120645045.png)
