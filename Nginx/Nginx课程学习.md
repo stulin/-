@@ -211,7 +211,8 @@ http  https仔细学习下！！！！很实用啊；
 
 ### Nginx静态资源部署及可能用到的指令
 
-- Nginx静态资源的配置指令
+- #### Nginx静态资源的配置指令
+  
   - listen    //nginx.org/en/docs 有语法等信息
     - ![image-20240215113735954](Nginx课程学习.assets/image-20240215113735954.png)
   - default server //访问的地址没配置对应的server时会跳转到default server；没有配置default server的时候，默认第一个配置的server为default_server
@@ -230,35 +231,40 @@ http  https仔细学习下！！！！很实用啊；
     - 匹配优先级
       - 精确匹配 > 通配符在开始时匹配>通配符在结束时匹配>正则表达式匹配 > 默认的default_server，没有指定默认找第一个server
       - ![image-20240215203108958](Nginx课程学习.assets/image-20240215203108958.png)
-  - location //不带符号（以指定模式开始，后面可以跟任意字符） =(严格匹配)  ~（正则区分大小写） ~*(正则不区分大小写)  ^~（以指定模式开始，且一旦模式匹配会忽略后面匹配的正则）
+  - location //不带符号（以指定模式开始，后面可以跟任意字符；匹配上还会向后搜索，搜索到匹配的会使用后面的） =(严格匹配)  ~（正则区分大小写） ~*(正则不区分大小写)  ^~（以指定模式开始，且一旦模式匹配会忽略后面匹配的正则）
     - ![image-20240215205231164](Nginx课程学习.assets/image-20240215205231164.png)
     - ![image-20240215211049399](Nginx课程学习.assets/image-20240215211049399.png)
     - ![image-20240215211102831](Nginx课程学习.assets/image-20240215211102831.png)
     - ![image-20240215211121188](Nginx课程学习.assets/image-20240215211121188.png)
     - ![image-20240215210957037](Nginx课程学习.assets/image-20240215210957037.png)
-- 设置请求资源的目录
-  - root / alias :都可以指定资源路径；root的处理结果是 root路径+location路径；alias的处理结果是alias路径替换location路径（所以location后面的路径末尾带/的话，alias末尾也要加/）
+- #### 设置请求资源的目录
+  
+  - root / alias :都可以指定资源路径；root的处理结果是 root路径+location路径  +url中的资源位置；alias的处理结果是alias路径(也可以理解为alias替换了url中 location对应的内容)  +url中的资源位置（所以==location后面的路径末尾带/的话，alias末尾也要加/，root无此要求==）
+    - 同样监听/image，  root  /usr/local/nginx/html ;   alias  /usr/local/nginx/html/image
     - ![image-20240216170929587](Nginx课程学习-photos/image-20240216170929587.png)
-    - ![image-20240216171416832](Nginx课程学习-photos/image-20240216171416832.png)
-  - index : 设置location等的默认主页
+    - ![image-20240324150407563](Nginx课程学习-photos/image-20240324150407563.png)
+  - index : 设置location的默认主页
     - ![image-20240217195332059](Nginx课程学习-photos/image-20240217195332059.png)
-  - error_page： 设置错误页面，可以跟域名、重定向地址、自定义展示错误信息、自定义返回的状态码；
+  - error_page： 设置错误页面，可以跟域名、重定向地址、自定义展示错误信息、自定义返回的状态码 + 错误页面；
     - ![image-20240217200008415](Nginx课程学习-photos/image-20240217200008415.png)
     - ![image-20240217200149194](Nginx课程学习-photos/image-20240217200149194.png)
     - ![image-20240217200238229](Nginx课程学习-photos/image-20240217200238229.png)
-- 静态资源优化配置指令
+- #### 静态资源优化配置指令
+  
   - sendfile
+    - 是否开启高效的文件传输模式
+      - 未使用sendfile时访问静态资源流程：nginx应用程序发送read指令；磁盘拷贝文件--->内核缓冲区---->应用程序缓冲区；nginx应用程序发送write指令；应用程序缓冲区拷贝文件--->socket缓冲区--->网卡---->发送到浏览器；
+      - 使用sendfile时访问静态资源流程：sendfile可以指定最终要交给的socket；可以直接走磁盘-->内核缓冲区-->socket缓冲区--->网卡-->浏览器；少了两次拷贝和  内核态/用户态的切换；//==简单来说就是不用再结果应用程序了==
     - http底层是tcp, tcp底层是socket;  sendfile是操作系统底层的一个函数；一般操作系统不允许应用程序直接读磁盘，认为不安全；
     - ![image-20240217231139494](Nginx课程学习-photos/image-20240217231139494.png)
-    - 未使用sendfile时访问静态资源流程很长，nginx应用程序发送read指令；磁盘拷贝文件到内核缓冲区；内核缓冲区拷贝文件到应用程序缓冲区；nginx应用程序发送write指令；应用程序缓冲区拷贝文件到socket缓冲区；socket缓冲区拷贝文件到网卡；最后由网卡发送到浏览器；
     - ![image-20240217230548319](Nginx课程学习-photos/image-20240217230548319.png)
-    - sendfile可以指定最终要交给的socket；可以直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器；少了两次拷贝和  内核态/用户态的切换；
     - ![image-20240217231121164](Nginx课程学习-photos/image-20240217231121164.png)
-  - tcp_nopush   tcp_nodelay
-  - ![image-20240217232612885](Nginx课程学习-photos/image-20240217232612885.png)
-  - ![image-20240217232527734](Nginx课程学习-photos/image-20240217232527734.png)
-  - 如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低；
-  - ![image-20240217232326576](Nginx课程学习-photos/image-20240217232326576.png)
+  - tcp_nopush：服务端要发送的数据填满缓冲区才发（send file开启时才生效）；   tcp_nodelay：如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低（keep alive开启时才生效）
+    - 2.5.9以后两者可以同时开启，tcp_nopush保证发送数据前缓冲区已填满，提升效率；tcp_nodelay保证最后一个包发送时，即使数据未填满缓冲区也会立刻发送
+    - ![image-20240217232612885](Nginx课程学习-photos/image-20240217232612885.png)
+    - ![image-20240217232527734](Nginx课程学习-photos/image-20240217232527734.png)
+    - 如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低；
+    - ![image-20240217232326576](Nginx课程学习-photos/image-20240217232326576.png)
 - 静态资源压缩
   - ![image-20240218202838463](Nginx课程学习-photos/image-20240218202838463.png)
   - //浏览器缓存开启时，走缓存的话大小可能会显示很小；
@@ -275,9 +281,9 @@ http  https仔细学习下！！！！很实用啊；
   - gzip使用示例
     - ![image-20240229183623532](Nginx课程学习-photos/image-20240229183623532.png)
   - gzip_static
+    - 是否已经提前压缩好静态文件，即去检测资源同名的.gz文件；on则符合gzip_http_version配置生效，always则永远生效
     - 解决Gzip和senfile共存的问题，使用sendfile之后，静态资源获取就不会经过应用程序（见前文，直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器）；但是压缩这个操作是要应用程序进行的。为了保证senfile和Gzip共存，一般是提前手动把静态资源压缩好（.gz文件），保存在磁盘，当gzip生效时就可以直接去找.gz文件
     - ![image-20240229184851933](Nginx课程学习-photos/image-20240229184851933.png)
-    - on则gzip_http_version配置生效，always则永远生效
 - 番外：nginx重新编译 增加新的模块
   - 注：第六步还需要补充第一步查询得到的参数；第8步需要在安装目录下执行；
   - ![image-20240229185518428](Nginx课程学习-photos/image-20240229185518428.png)
@@ -302,7 +308,7 @@ http  https仔细学习下！！！！很实用啊；
 
   - ![image-20240229192724945](Nginx课程学习-photos/image-20240229192724945.png)
 
-  - 强缓存：缓存未过期直接取浏览器缓存；弱缓存，缓存过期，还需要发请求到服务端确认Tag  Last-Modified没有变化，服务端返回一个304然后才能取浏览器缓存
+  - 强缓存：缓存未过期直接取浏览器缓存；弱缓存，缓存过期，还需要发请求到服务端确认ETag  Last-Modified没有变化，服务端返回一个304然后才能取浏览器缓存
 
     - F5或者刷新都会使得强缓存失效；验证强缓存需要新开一个tab   //验证缓存时，disable cahce注意配置；
 
