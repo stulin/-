@@ -347,7 +347,7 @@ http  https仔细学习下！！！！很实用啊；
 
 -   实现原理
   - http的头信息referer，告诉浏览器该网页从哪个页面链接跳转过来，后台服务器判断referer是否为自己信任的网站地址，是则继续访问，不是则返回403（服务器拒绝访问）
-  - 指令：vilid_referers
+  - 指令：vilid_referers    可选值：none(Header中Refer为空时允许访问)   blocked（部位空，结果防火墙伪装的不带http://，https://）   server_names（具体的域名或IP）   string（~开头的正则表达式或带*的字符串） 
     - ![image-20240305235725463](Nginx课程学习-photos/image-20240305235725463.png)
     - ![image-20240305235736213](Nginx课程学习-photos/image-20240305235736213.png)
     - 扩展：可以结合后面的rewrite指令提升用户体验，403时给提示信息
@@ -371,7 +371,7 @@ http  https仔细学习下！！！！很实用啊；
     - ![image-20240312223430350](Nginx课程学习-photos/image-20240312223430350.png)
     - ![image-20240309211635340](Nginx课程学习-photos/image-20240309211635340.png)
 - if 指令
-  - if 和 (之间一定要有一个空格；字符串不需要加引号，并且等号和不等号前后都要加空格；
+  - if 和 ( 之间一定要有一个空格；字符串不需要加引号，并且等号和不等号前后都要加空格；
   - ![image-20240312233038904](Nginx课程学习-photos/image-20240312233038904.png)
   - ![image-20240312233425593](Nginx课程学习-photos/image-20240312233425593.png)
   - ![image-20240312233618600](Nginx课程学习-photos/image-20240312233618600.png)
