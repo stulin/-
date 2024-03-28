@@ -379,36 +379,36 @@ http  https仔细学习下！！！！很实用啊；
     - ![image-20240312233151423](Nginx课程学习-photos/image-20240312233151423.png)
     - ![image-20240312233926603](Nginx课程学习-photos/image-20240312233926603.png)
 - break
-  - nginx默认配置  root:当前目录下的html; index:当前目录下的index；一个作用域就是指一个{}的范围内；终止当前匹配就是不继续走当前location的后面return逻辑（不只是当前作用域了）
+  - break：同一个作用域内，break前的配置指令生效，break后的不生效；同时，终止当前的匹配并进行一次重定向（后面的return等不会去执行），即（默认从当前安装目录的html）去本地location对应目录下的静态资源（文件名默认是index.html）。
   - ![image-20240313181953981](Nginx课程学习-photos/image-20240313181953981.png)
   - ![image-20240313183741868](Nginx课程学习-photos/image-20240313183741868.png)
-- return
+- return：向客户端返回，在return后的所有Nginx配置都是无效的
   - ![image-20240313194544634](Nginx课程学习-photos/image-20240313194544634.png)
   - ![image-20240313194851020](Nginx课程学习-photos/image-20240313194851020.png)
 - rewrite指令
-  - rewrite后面的正则表达式中包含（），后面编写重写目的地址的时候可以用 \$1、 \$2等引用
+  - rewrite：通过正则表达式改变URI，如果字符串是http://或https://开头的，会直接返回重写后的uri。可以同时存在多个rewrite指令。    //rewrite后面的正则表达式中包含（），后面编写重写目的地址的时候可以用 $1、 $2等引用
   - ![image-20240313195346831](Nginx课程学习-photos/image-20240313195346831.png)
   - ![image-20240313200110465](Nginx课程学习-photos/image-20240313200110465.png)
-  - flag: 设置rewrite对URI的处理行为，分 last(用新URI在当前server中匹配) 、 break（用新URI在当前location中匹配）、  redirect（用新URI在当前server中匹配+301重定向)、  permanent（用新URI在当前server中匹配+302重定向）
+  - flag: 设置rewrite对URI的处理行为，分 last(用新URI在当前server中匹配) 、 break（用新URI在当前location中匹配，找的就是静态资源文件了！）、  redirect（用新URI在当前server中匹配+301重定向)、  permanent（用新URI在当前server中匹配+302重定向）
     - ![image-20240313201411531](Nginx课程学习-photos/image-20240313201411531.png)
     - ![image-20240313201429779](Nginx课程学习-photos/image-20240313201429779.png)
     - ![image-20240313201454615](Nginx课程学习-photos/image-20240313201454615.png)
     - ![image-20240313201517413](Nginx课程学习-photos/image-20240313201517413.png)
-- rewrite_log
+- rewrite_log：是否开启URL重写日志的输出功能
   - ![image-20240313202746590](Nginx课程学习-photos/image-20240313202746590.png)
 - rewrite的案例
   - 域名跳转：例如让www.360buy.com也重定向到www.jd.com
     - rewrite ^后面不跟任何就代表对server_name后面的内容没有任何限制，(.*)是为了重定向的时候把后面的uri一起带过来
     - ![image-20240313204404229](Nginx课程学习-photos/image-20240313204404229.png)
-  - 域名镜像：和镜像网站类似，完全相同的网站放置到几台服务器上，实现 高可用、分布不同地区以提高响应速度、流量负载、不同镜像不同域名防止域名限制。上述的www.itheima.com  www.itheima.cn 都跳转www.itcast.cn，则www.ticast.cn就是主域名，另外两个就是镜像域名。也可以只对一个子目录资源做镜像，可以在location配置write功能。
+  - 域名镜像：和镜像网站类似，完全相同的网站放置到几台服务器上，实现 高可用、分布不同地区以提高响应速度、流量负载、不同镜像不同域名防止域名限制。上述的www.itheima.com  www.itheima.cn 都跳转www.itcast.cn，则www.ticast.cn就是主域名，另外两个就是镜像域名。也可以只对一个子目录资源做镜像，可以在location配置rewrite功能。
     - ![image-20240313205539654](Nginx课程学习-photos/image-20240313205539654.png)
   - 独立域名：为每一个功能模块设置独立的域名
     - ![image-20240316203612266](Nginx课程学习-photos/image-20240316203612266.png)
   - 目录自动添加  ”/“
-    - 访问url不加斜杆，Nginx服务器内部会自动做一个301的重定向；如果重定向开关（serve_name_in_redirect）打开，目的地址（如果是nginx服务器）会被替换为server_name。nginx 0.8.48以前开关都是on，需要处理
+    - nginx 0.8.48以前server_name_in_redirect的默认开关都是on，访问url不加斜杆，Nginx服务器内部会自动做一个301的重定向，目的地址（如果是nginx服务器）会被替换为server_name。
     - ![image-20240316215945986](Nginx课程学习-photos/image-20240316215945986.png)
     - ![image-20240316220003452](Nginx课程学习-photos/image-20240316220003452.png)
-    - \$request_filename   \$host  \$server等都是全局变量； 下面的\[^/] 表示    去匹配最后一个字符且最后一个字符不能为空
+    - \$request_filename   \$host  \$server等都是全局变量； 下面的\[^/] 表示    去匹配最后一个字符不是/且最后一个字符不能为空； permanent保证了永久重定向；
     - ![image-20240316222108022](Nginx课程学习-photos/image-20240316222108022.png)
   - 合并目录
     - 搜索引擎优化（SEO）是一种利用搜索引擎的搜索规则提高目的网站在搜索引擎内排名的方式（简单举例就是 提升你在百度搜索结果的排名），其中一项就是URL目录层级不超过三级（过低 [即大量文件放一个目录] 的话有会有文件资源管理混乱+访问文件速度下降）。
