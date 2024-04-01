@@ -431,7 +431,7 @@ http  https仔细学习下！！！！很实用啊；
 
 
 
-
+### Nginx实现代理（正向+反向）
 
 #### Nginx代理概述及环境准备
 
@@ -541,6 +541,8 @@ http  https仔细学习下！！！！很实用啊；
 
 ![image-20220717194133875](Nginx课程学习-photos/image-20220717194133875.png)
 
+### Nginx安全相关
+
 #### Nginx的安全控制
 
 ![image-20220717194650418](Nginx课程学习-photos/image-20220717194650418.png)
@@ -566,6 +568,8 @@ nginx默认不支持https访问
 第四步： 配置在原来配置的基础上添加http_ssl_module
 
 ![image-20220717195737577](Nginx课程学习-photos/image-20220717195737577.png)
+
+#### ssl相关指令
 
 ![image-20220717203217943](Nginx课程学习-photos/image-20220717203217943.png)
 
