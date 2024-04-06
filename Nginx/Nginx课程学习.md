@@ -623,11 +623,15 @@ ctrl  v ,选中，delete;
 
 
 
-www.baidu.com ，不需要加https前缀，默认的访问方式是https，用rewrite命令：
+用rewrite命令实现默认的访问方式是https：如www.baidu.com ，不需要加https前缀
 
 ![image-20220724110540932](Nginx课程学习-photos/image-20220724110540932.png)
 
-#### 反向代理系统调优
+#### 反向代理系统调优 
+
+缓冲：如客户端不和服务器直接交互，中间多一层缓冲区，缓冲区依次和服务器A（例如A处理快，B处理慢，缓冲区可以再对A B的返回结果做一次重新排序，A就不用一直等） 、B交互。
+
+缓存：代理服务器保存一份缓存数据，客户端再次发系统请求时只需要返回代理服务器上的缓存数据接口
 
 ![image-20220724111740947](Nginx课程学习-photos/image-20220724111740947.png)
 
@@ -640,8 +644,6 @@ www.baidu.com ，不需要加https前缀，默认的访问方式是https，用re
 ![image-20220724112049304](Nginx课程学习-photos/image-20220724112049304.png)
 
 ![image-20220724112455907](Nginx课程学习-photos/image-20220724112455907.png)
-
-![image-20220724112544614](Nginx课程学习-photos/image-20220724112544614.png)
 
 ![image-20220724112618634](Nginx课程学习-photos/image-20220724112618634.png)
 
@@ -667,15 +669,16 @@ www.baidu.com ，不需要加https前缀，默认的访问方式是https，用re
 
 ![image-20220724125453417](Nginx课程学习-photos/image-20220724125453417.png)
 
-ping命令可以查看域名对应的ip地址；一个域名可以绑定多个ip；
-
  ![image-20220724125729165](Nginx课程学习-photos/image-20220724125729165.png)
 
 ![image-20220724130842505](Nginx课程学习-photos/image-20220724130842505.png)
 
 ![image-20220724130907390](Nginx课程学习-photos/image-20220724130907390.png)
 
-DNS有本地缓存； ipconfig/flushdns
+tips
+
+- ping命令可以查看域名对应的ip地址；一个域名可以绑定多个ip以实现负载均衡；
+- DNS有本地缓存； ipconfig/flushdns；
 
 ![image-20220724131312607](Nginx课程学习-photos/image-20220724131312607.png)
 
@@ -705,8 +708,6 @@ DNS有本地缓存； ipconfig/flushdns
 
 ![image-20220731135220066](Nginx课程学习-photos/image-20220731135220066.png)
 
-![image-20220731144902602](Nginx课程学习-photos/image-20220731144902602.png)
-
 ![image-20220731144926101](Nginx课程学习-photos/image-20220731144926101.png)
 
 ![image-20220731144955657](Nginx课程学习-photos/image-20220731144955657.png)
@@ -724,6 +725,8 @@ DNS有本地缓存； ipconfig/flushdns
 ![image-20220731150903697](Nginx课程学习-photos/image-20220731150903697.png)
 
 ![image-20220731151926250](Nginx课程学习-photos/image-20220731151926250.png)
+
+//systemctl start firewalld 开启防火墙
 
   ![image-20220731151640905](Nginx课程学习-photos/image-20220731151640905.png)
 
@@ -778,6 +781,10 @@ vim:  /表示搜索；
 ![image-20220731163042211](Nginx课程学习-photos/image-20220731163042211.png)
 
   //注意：有两个nginx文件夹，一个是nginx的源码，make的时候在源码；另一个是安装目录，存放可执行文件；？？？？
+
+![image-20240405225356782](Nginx课程学习-photos/image-20240405225356782.png)
+
+![image-20240405225410987](Nginx课程学习-photos/image-20240405225410987.png)
 
 ![image-20220731165114558](Nginx课程学习-photos/image-20220731165114558.png)
 
@@ -840,4 +847,39 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 //四层和七层如果监听同一个端口，生效的应该是四层；
 
 
+
+### Nginx缓存
+
+#### 缓存集成
+
+- 缓存维护及使用流程：缓存命中/不命中的情况
+  - ![image-20240406182438356](Nginx课程学习-photos/image-20240406182438356.png)
+- 缓存使用场景
+  - ![image-20240406182804279](Nginx课程学习-photos/image-20240406182804279.png)
+- 优缺点  //高可用，是指缓存也是临时的备份，给服务器更多维修时间
+  - ![image-20240406182822831](Nginx课程学习-photos/image-20240406182822831.png)
+- Nginx作为Web服务器缓存  生效流程
+  - ![image-20240406183051368](Nginx课程学习-photos/image-20240406183051368.png)
+- Nginx URL缓存、状态码缓存流程 
+  - ![image-20240406190736856](Nginx课程学习-photos/image-20240406190736856.png)
+  - ![image-20240406190713769](Nginx课程学习-photos/image-20240406190713769.png)
+- Nginx缓存相关指令
+  - proxy_cache_path //注意：只能再http块中配置
+  - ![image-20240406191735190](Nginx课程学习-photos/image-20240406191735190.png)
+  - ![image-20240406192055900](Nginx课程学习-photos/image-20240406192055900.png)
+  - ![image-20240406192214943](Nginx课程学习-photos/image-20240406192214943.png)
+  - ![image-20240406192440332](Nginx课程学习-photos/image-20240406192440332.png)
+  - proxy_cache：混存钱的名字要和proxy_cache_path中指定的缓存区名称一致
+    - ![image-20240406192931297](Nginx课程学习-photos/image-20240406192931297.png)
+  - proxy_cache_key
+    - ![image-20240406193130924](Nginx课程学习-photos/image-20240406193130924.png)
+  - proxy_cache_valid //从上到下适配，第一个命中的生效
+    - ![image-20240406193152903](Nginx课程学习-photos/image-20240406193152903.png)
+    - ![image-20240406193600417](Nginx课程学习-photos/image-20240406193600417.png)
+  - proxy_cache_min_uses
+    - ![image-20240406200335347](Nginx课程学习-photos/image-20240406200335347.png)
+  - proxy_cache_methods
+    - ![image-20240406200350156](Nginx课程学习-photos/image-20240406200350156.png)
+- Nginx缓存案例
+  - ![image-20240406200517088](Nginx课程学习-photos/image-20240406200517088.png)
 
