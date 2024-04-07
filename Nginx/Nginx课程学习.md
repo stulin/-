@@ -882,4 +882,7 @@ https://blog.csdn.net/tongzidane/article/details/125443140
     - ![image-20240406200350156](Nginx课程学习-photos/image-20240406200350156.png)
 - Nginx缓存案例
   - ![image-20240406200517088](Nginx课程学习-photos/image-20240406200517088.png)
-
+  - 阶段一：可以正常133代理请求
+    - ![image-20240407191311126](Nginx课程学习-photos/image-20240407191311126.png)
+  - 阶段二：开启nginx缓存  //查看缓存是否命中的方法：查看nginx服务器是否生成目录或文件；添加发回头$upstream_cache_status；
+    - ![image-20240407191147777](Nginx课程学习-photos/image-20240407191147777.png)
