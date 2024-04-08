@@ -886,3 +886,24 @@ https://blog.csdn.net/tongzidane/article/details/125443140
     - ![image-20240407191311126](Nginx课程学习-photos/image-20240407191311126.png)
   - 阶段二：开启nginx缓存  //查看缓存是否命中的方法：查看nginx服务器是否生成目录或文件；添加发回头$upstream_cache_status；
     - ![image-20240407191147777](Nginx课程学习-photos/image-20240407191147777.png)
+  - 阶段三：自定义缓存key、min_use等；
+    - ![image-20240408185919471](Nginx课程学习-photos/image-20240408185919471.png)
+- nginx缓存删除
+  - 删除对应的缓存目录//适合批量删除缓存的场景
+    - rm  -rf /usr/local/proxy_cache/  ....
+  - 使用第三方扩展模块： 使用proxy_cache_purge模块 + nginx配置purge==（注意key带变量的话，要保证正常访问、和purge请求对应的变量值保持一致）== + 前端发请求删除
+    - ![image-20240408193558719](Nginx课程学习-photos/image-20240408193558719.png)
+    - ![image-20240408193654279](Nginx课程学习-photos/image-20240408193654279.png)
+    - ![image-20240408193806235](Nginx课程学习-photos/image-20240408193806235.png)
+- Nginx设置资源不缓存
+  - 对于经常变化的数据，不进行缓存
+  - proxy_no_cache：不将数据进行缓存
+    - ![image-20240408194946193](Nginx课程学习-photos/image-20240408194946193.png)
+  - proxy_cache_bypass：不从缓存中获取数据 
+    - ![image-20240408195045457](Nginx课程学习-photos/image-20240408195045457.png)
+    - ![image-20240408195935932](Nginx课程学习-photos/image-20240408195935932.png)
+  -  案例一（proxy_no_cache/proxy_cache_bypass 在用法上都是一样的）：常用方式是设置上面三个条件，然后不缓存的资源在请求上添加参数nocache或comment即可
+    -  ![image-20240408201100519](Nginx课程学习-photos/image-20240408201100519.png)
+    - ![image-20240408201011230](Nginx课程学习-photos/image-20240408201011230.png)
+  - 案例二：自定义if块第一过滤条件
+    - ![image-20240408202024307](Nginx课程学习-photos/image-20240408202024307.png)
