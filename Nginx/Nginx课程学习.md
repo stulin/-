@@ -907,3 +907,15 @@ https://blog.csdn.net/tongzidane/article/details/125443140
     - ![image-20240408201011230](Nginx课程学习-photos/image-20240408201011230.png)
   - 案例二：自定义if块第一过滤条件
     - ![image-20240408202024307](Nginx课程学习-photos/image-20240408202024307.png)
+
+### Nginx实现服务集群搭建
+
+- ![image-20240410165452950](Nginx课程学习-photos/image-20240410165452950.png)
+- ![image-20240410165113599](Nginx课程学习-photos/image-20240410165113599.png)
+- ![image-20240410165428745](Nginx课程学习-photos/image-20240410165428745.png)
+- 为什么可以直接访问tomcat，还要多一层nginx，提高系统复杂度?
+  - 使用nginx实现动静分离 //动即后台应用程序的业务处理；静即网站的静态资源（html, javaScript, css, image等）；动静分离即静态资源部署nginx/cdn等，动态资源部署tomcat/weblogic/websphere等服务器好处是nginx的静态资源处理效率高+并发高，切实现了动态资源和静态资源的解耦；     //nginx的并发在5W左右，tomcat在500左右；
+  - Nginx搭建Tomcat的集群
+- ![image-20240410182607305](Nginx课程学习-photos/image-20240410182607305.png)
+- 
+
