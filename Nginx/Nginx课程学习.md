@@ -914,8 +914,15 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 - ![image-20240410165113599](Nginx课程学习-photos/image-20240410165113599.png)
 - ![image-20240410165428745](Nginx课程学习-photos/image-20240410165428745.png)
 - 为什么可以直接访问tomcat，还要多一层nginx，提高系统复杂度?
-  - 使用nginx实现动静分离 //动即后台应用程序的业务处理；静即网站的静态资源（html, javaScript, css, image等）；动静分离即静态资源部署nginx/cdn等，动态资源部署tomcat/weblogic/websphere等服务器好处是nginx的静态资源处理效率高+并发高，切实现了动态资源和静态资源的解耦；     //nginx的并发在5W左右，tomcat在500左右；
-  - Nginx搭建Tomcat的集群
+  - 使用nginx实现动静分离 //动即后台应用程序的业务处理；静即网站的静态资源（html, javaScript, css, image等）；动静分离即静态资源部署nginx/cdn等，动态资源部署tomcat/weblogic/websphere等服务器好处是nginx的==静态资源处理效率高+并发高，且实现了动态资源和静态资源的解耦；==     //nginx的并发在5W左右，tomcat在500左右；
+  - ==Nginx搭建Tomcat的集群，避免后端的单点故障==
 - ![image-20240410182607305](Nginx课程学习-photos/image-20240410182607305.png)
-- 
+- 例：主页、js等资源放在nginx；后端接口的请求转发到146
+  - ![image-20240411161156634](Nginx课程学习-photos/image-20240411161156634.png)
+- nginx搭建tomcat集群，流量分发到多台服务器 //这里用不同的端口模拟不同的机器;  需要改tomcat/conf/server.xml，修改端口8005->8105 8080->8180
+  - ![image-20240411164245327](Nginx课程学习-photos/image-20240411164245327.png)
+  - ![image-20240411164855222](Nginx课程学习-photos/image-20240411164855222.png)
 
+### Nginx高可用解决方案之keep alived
+
+- c语言编写，为LVS负载均衡软件设计，通过VRRP协议实现高可用  //避免nginx单点故障
