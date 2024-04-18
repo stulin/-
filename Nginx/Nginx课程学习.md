@@ -926,3 +926,59 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 ### Nginx高可用解决方案之keep alived
 
 - c语言编写，为LVS负载均衡软件设计，通过VRRP协议实现高可用  //避免nginx单点故障
+
+- VRRP
+
+  - 简介：虚拟路由冗余协议，优先级高的是master节点，请求由master结点处理。master定时发送当前状态信息，backup接收状态信息（超时未收到则认为master出问题了）
+  - 核心：选择协议和路由容错协议
+    - ![image-20240418194720106](Nginx课程学习-photos/image-20240418194720106.png)
+    - ![image-20240418200039508](Nginx课程学习-photos/image-20240418200039508.png)
+
+- keep alived实践
+
+  - 安装keep alived
+
+    - ![image-20240418195758918](Nginx课程学习-photos/image-20240418195758918.png)
+
+  - keep alived配置文件
+
+    - global全局配置、vrrp相关配置、LVS相关配置，重要的配置 priority
+
+    - ![image-20240418203445693](Nginx课程学习-photos/image-20240418203445693.png)
+
+    - ![image-20240418203529873](Nginx课程学习-photos/image-20240418203529873.png)
+
+    - ```
+      VRRP部分，该部分可以包含以下四个子模块
+      1. vrrp_script
+      2. vrrp_sync_group
+      3. garp_group
+      4. vrrp_instance
+      我们会用到第一个和第四个，
+      #设置keepalived实例的相关信息，VI_1为VRRP实例名称
+      vrrp_instance VI_1 {
+          state MASTER  		#有两个值可选MASTER主 BACKUP备
+          interface ens33		#vrrp实例绑定的接口，用于发送VRRP包[当前服务器使用的网卡名称]
+          virtual_router_id 51#指定VRRP实例ID，范围是0-255
+          priority 100		#指定优先级，优先级高的将成为MASTER
+          advert_int 1		#指定发送VRRP通告的间隔，单位是秒
+          authentication {	#vrrp之间通信的认证信息
+              auth_type PASS	#指定认证方式。PASS简单密码认证(推荐)
+              auth_pass 1111	#指定认证使用的密码，最多8位
+          }
+          virtual_ipaddress { #虚拟IP地址设置虚拟IP地址，供用户访问使用，可设置多个，一行一个
+              192.168.200.222
+          }
+      }
+      ```
+
+  - 访问测试
+
+    - ![image-20240418203812434](Nginx课程学习-photos/image-20240418203812434.png)
+    - ![image-20240418203827214](Nginx课程学习-photos/image-20240418203827214.png)
+    - ![image-20240418205121562](Nginx课程学习-photos/image-20240418205121562.png)
+
+  - 如何让keepalived自动判断nginx是否启动并自动启动/停止 keepalived？
+
+    - 
+
