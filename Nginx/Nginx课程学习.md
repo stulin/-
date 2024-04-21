@@ -980,5 +980,68 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 
   - 如何让keepalived自动判断nginx是否启动并自动启动/停止 keepalived？
 
-    - 
+    -  编写vrrp_script脚本检测服务器的nginx是否正常，异常则切换
+
+      - ![image-20240421154202542](Nginx课程学习-photos/image-20240421154202542.png)
+
+      - //当前机器的实例下要添加新增的脚本
+        - ![image-20240421155835472](Nginx课程学习-photos/image-20240421155835472.png)
+      - ![image-20240421154456966](Nginx课程学习-photos/image-20240421154456966.png)
+
+    - 实验：脚本只保留最后一个if；配置好keppalived相关内容；重启keepalived；nginx -s stop模拟nginx，(ip -a)会发现keepalived漂移到其它的机器了; 重启nginx和keepalived，(ip -a)会发现keepalived漂移回来了；
+
+      - ![image-20240421160159263](Nginx课程学习-photos/image-20240421160159263.png)
+
+    - 问题
+
+      - ![image-20240421161201541](Nginx课程学习-photos/image-20240421161201541.png)
+      - 上面  weight -20意思是如果脚本成功停止了keepalived服务，则优先级-20，如果所有的实例设置的都是 backup+ nopreempt；通过该配置调整weight可以避免宕机机器恢复时的二次切换（master/高优先级的实例宕机后，backup会成为主节点；但是master/高优先级恢复时，因为竞争机制 master/高优先级 会二次切换为主节点）
+
+### Nginx制作下载站点
+
+- 可以使用nginx的ngx_http_autoindex_module模块来实现，该模块处理以“/”结尾的请求，并生成目录列表。
+  - ![image-20240421162247481](Nginx课程学习-photos/image-20240421162247481.png)
+  - ![image-20240421163535169](Nginx课程学习-photos/image-20240421163535169.png)
+  - //html格式及autoindex-format设置的值为html
+  - ![image-20240421163629338](Nginx课程学习-photos/image-20240421163629338.png)
+  - ![image-20240421163642931](Nginx课程学习-photos/image-20240421163642931.png)
+  - ![image-20240421165646613](Nginx课程学习-photos/image-20240421165646613.png)
+- 实验
+  - 资源都放到一个文件夹；添加nginx配置
+
+### Ngixn用户认证模块的使用
+
+- 可以用ngx_http_auth_basic_module实现，允许通过HTTP基本身份验证 协议验证用户名和密码来限制对资源的访问，默认安装（可以用--without-http_auth_basic_module取消） 
+- ![image-20240421190637174](Nginx课程学习-photos/image-20240421190637174.png)
+- ![image-20240421190740803](Nginx课程学习-photos/image-20240421190740803.png)
+- 实验：
+  - ![image-20240421191014477](Nginx课程学习-photos/image-20240421191014477.png)
+  - ![image-20240421191026629](Nginx课程学习-photos/image-20240421191026629.png)
+  - ![image-20240421192435676](Nginx课程学习-photos/image-20240421192435676.png)
+
+### lua的概念介绍
+
+- 轻量、小巧的脚本语言，c语言编写，可嵌入其它应用程序，为其它应用程序提供扩展和定制功能。
+- 优点：轻量级、可扩展、支持面向过程编程和函数式编程
+  - ![image-20240421202059288](Nginx课程学习-photos/image-20240421202059288.png)
+- 应用场景：
+  - 游戏开发、独立应用脚本、web应用脚本、扩展和数据库插件、系统安全
+
+### Lua的安装
+
+- 下载源码包并在终端解压、编译即可使用
+- ![image-20240421202347294](Nginx课程学习-photos/image-20240421202347294.png)
+- ![image-20240421202724262](Nginx课程学习-photos/image-20240421202724262.png)
+
+### Lua语法
+
+- 交互方式：交互式和脚本式（可以用lua命令执行；如果要用./执行，需要在脚本第一行指定lua解释器）；语句末尾可以加/不加分号；
+  - ![image-20240421203557996](Nginx课程学习-photos/image-20240421203557996.png)
+  - ![image-20240421203808752](Nginx课程学习-photos/image-20240421203808752.png)
+  - ![image-20240421203924732](Nginx课程学习-photos/image-20240421203924732.png)
+  - ![image-20240421204021062](Nginx课程学习-photos/image-20240421204021062.png)
+  - ![image-20240421204248260](Nginx课程学习-photos/image-20240421204248260.png)
+- 注释：单行注释  -- 、多行注释 --[[       --]]、取消多行注释  ---[[       ---]]
+- 标识符：
+  - 
 
