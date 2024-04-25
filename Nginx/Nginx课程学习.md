@@ -1043,5 +1043,12 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - ![image-20240421204248260](Nginx课程学习-photos/image-20240421204248260.png)
 - 注释：单行注释  -- 、多行注释 --[[       --]]、取消多行注释  ---[[       ---]]
 - 标识符：
-  - 
+  - 大小写字母/下划线开头后加上0个或多个字母/下划线/数字‘
+  - ![image-20240425231756082](Nginx课程学习-photos/image-20240425231756082.png)
+  - ![image-20240425231812335](Nginx课程学习-photos/image-20240425231812335.png)
+  - ![image-20240425231858331](Nginx课程学习-photos/image-20240425231858331.png)
+  - ![image-20240425231906945](Nginx课程学习-photos/image-20240425231906945.png)
+  - ![image-20240425232003209](Nginx课程学习-photos/image-20240425232003209.png)
+  - ![image-20240425234953864](Nginx课程学习-photos/image-20240425234953864.png)
 
+ 
