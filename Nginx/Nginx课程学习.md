@@ -1019,7 +1019,7 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - ![image-20240421191026629](Nginx课程学习-photos/image-20240421191026629.png)
   - ![image-20240421192435676](Nginx课程学习-photos/image-20240421192435676.png)
 
-### lua的概念介绍
+### lua的概念介绍//==语法不是重点，关注Nginx与脚本语言的配合方式==
 
 - 轻量、小巧的脚本语言，c语言编写，可嵌入其它应用程序，为其它应用程序提供扩展和定制功能。
 - 优点：轻量级、可扩展、支持面向过程编程和函数式编程
@@ -1051,4 +1051,15 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - ![image-20240425232003209](Nginx课程学习-photos/image-20240425232003209.png)
   - ![image-20240425234953864](Nginx课程学习-photos/image-20240425234953864.png)
 
- 
+### Lua数据类型
+
+- ![image-20240427221234130](Nginx课程学习-photos/image-20240427221234130.png)
+- ![image-20240427221341329](Nginx课程学习-photos/image-20240427221341329.png)
+- ![image-20240427221515476](Nginx课程学习-photos/image-20240427221515476.png)
+- ![image-20240427222033655](Nginx课程学习-photos/image-20240427222033655.png)
+- ![image-20240427222514510](Nginx课程学习-photos/image-20240427222514510.png)
+- ![image-20240427223001774](Nginx课程学习-photos/image-20240427223001774.png)
+- ![image-20240427223202042](Nginx课程学习-photos/image-20240427223202042.png)
+- ![image-20240427223231772](Nginx课程学习-photos/image-20240427223231772.png)
+- ![image-20240427223255158](Nginx课程学习-photos/image-20240427223255158.png)
+
