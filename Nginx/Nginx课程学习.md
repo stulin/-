@@ -31,6 +31,12 @@ http  https仔细学习下！！！！很实用啊；
 
 
 
+大富大贵，我早不留恋，既然命定无此，也便坦然接纳了。唯有男女一事，久久不能释怀。近来，年岁增长，渐渐悟到一点修身的功夫，也便放开了。美人如同豪车豪宅，既然命中没有，便不必强求，且于人生并非必需品。人生在世，终究是活得明白才能不枉此生。无欲无求，方渐明其志。
+
+凡在某个领域有高深造诣者，大多博学。首先要培养学习的兴趣，顺应人的本性，而后能坚持，能有所专。
+
+可以适当自学金融学！！！！！！
+
 #### 面试角度的问题梳理
 
 - 常用命令  ./nginx -t     ./nginx -s reload   //reload之后work进程的pid会变；重启之后master进程的pid会变；
@@ -1062,4 +1068,64 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 - ![image-20240427223202042](Nginx课程学习-photos/image-20240427223202042.png)
 - ![image-20240427223231772](Nginx课程学习-photos/image-20240427223231772.png)
 - ![image-20240427223255158](Nginx课程学习-photos/image-20240427223255158.png)
+- ![image-20240502115154135](Nginx课程学习.assets/image-20240502115154135.png)
+- ![image-20240502115226443](Nginx课程学习.assets/image-20240502115226443.png)
+- ![image-20240502115245614](Nginx课程学习.assets/image-20240502115245614.png)
 
+### Lua控语句
+
+- ![image-20240502120111229](Nginx课程学习.assets/image-20240502120111229.png)
+- ![image-20240502120402472](Nginx课程学习.assets/image-20240502120402472.png)
+- ![image-20240502132646233](Nginx课程学习.assets/image-20240502132646233.png)
+- ![image-20240502132808521](Nginx课程学习.assets/image-20240502132808521.png)
+- ![image-20240502133955934](Nginx课程学习.assets/image-20240502133955934.png)
+- ![image-20240502134906821](Nginx课程学习.assets/image-20240502134906821.png)
+- ![image-20240502134952794](Nginx课程学习.assets/image-20240502134952794.png)
+
+### Ngx_lua模块
+
+- Lua解释器集成进nginx，以实现业务逻辑；Lua内建协程，保证高并发服务能力的同时降低了业务逻辑实现成本
+- 模块环境准备
+  - lua-nginx-module模块
+    - ![image-20240502140351260](Nginx课程学习.assets/image-20240502140351260-4629832.png)
+    - ![image-20240502140433948](Nginx课程学习.assets/image-20240502140433948.png)
+    - ![image-20240502140524186](Nginx课程学习.assets/image-20240502140524186.png)
+    - ![image-20240502140549352](Nginx课程学习.assets/image-20240502140549352.png)
+    - ![image-20240502140610711](Nginx课程学习.assets/image-20240502140610711.png)
+  - OpenRestry
+    - http://openrestry.org    基于Nginx于Lua的高性能web平台，能够搭建高并发、扩展性好的 Web应用、Web服务和动态网关
+    - ![image-20240502141055596](Nginx课程学习.assets/image-20240502141055596.png)
+- nginx_lua指令
+  - 用lua编写nginx脚本以指令为单位，指定指定lua代码的运行时机和结果的使用方法
+  - ![image-20240502160807862](Nginx课程学习.assets/image-20240502160807862.png)
+  - ![image-20240502161036489](Nginx课程学习.assets/image-20240502161036489.png)
+  - ![image-20240502161105272](Nginx课程学习.assets/image-20240502161105272.png)
+  - ![image-20240502161122756](Nginx课程学习.assets/image-20240502161122756.png)
+- Ngx_lua使用set_by_lua指令
+  - ![image-20240502161207744](Nginx课程学习.assets/image-20240502161207744.png)
+  - ![image-20240502161848209](Nginx课程学习.assets/image-20240502161848209.png)
+  - ![image-20240502163742025](Nginx课程学习.assets/image-20240502163742025.png)
+-  Ngx_lua操作Redis
+  - Nginx支持3中方法访问Redis，分别是HttpRedis模块(适合做简单缓存)、HttpRedis2Module(功能比前一个稍强)、lua-resty-redis（推荐，适合复杂的业务逻辑）
+  - ![image-20240502165049574](Nginx课程学习.assets/image-20240502165049574.png)
+  - ![image-20240502165548039](Nginx课程学习.assets/image-20240502165548039.png)
+  - 下面的lcoation少了个/，/testRedis
+  - ![image-20240502180245539](Nginx课程学习.assets/image-20240502180245539.png)
+  - ![image-20240502180424885](Nginx课程学习.assets/image-20240502180424885.png)
+- ngx_lua操作Mysql
+  - 两种访问模式
+    - Ngx_lua模块和lua-regsty-mysql模块：这两个模块是安装OpenResty时默认安装的 //适合复杂的业务场景，同时支持存储过程的访问
+    - Drizzle_nginx_module(HttpDrizzleModule)模块：需要单独安装，这个库不在OpenResty中
+  - ![image-20240502181228279](Nginx课程学习.assets/image-20240502181228279.png)
+  - ![image-20240502181329364](Nginx课程学习.assets/image-20240502181329364.png)
+  - ![image-20240502181432053](Nginx课程学习.assets/image-20240502181432053.png)
+  - ![image-20240502181512617](Nginx课程学习.assets/image-20240502181512617.png)
+  - ![image-20240504111458958](Nginx课程学习.assets/image-20240504111458958.png)
+  - ![image-20240504111539697](Nginx课程学习.assets/image-20240504111539697.png)
+  - ![image-20240504112217560](Nginx课程学习.assets/image-20240504112217560.png)
+  - ![image-20240504111955670](Nginx课程学习.assets/image-20240504111955670.png)
+- 
+- Tips:
+  - tar -zxf ....  -C  targetDirectory  
+  - redis连接工具：redis desktop manager
+  - 问：redis和lua的结合是如何实现的？？redis的解释器结合了lua的解释器，识别到lua的指令时，使用Lua的解释器。
