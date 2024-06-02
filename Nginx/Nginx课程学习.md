@@ -4,6 +4,18 @@
 
 
 
+#### ==近期想学的内容==
+
+- 设计模式
+- F5负载均衡
+- 编码规范
+- docker  k8s
+- 源码，elastic job    // 防重，自己梳理一个工具类呀
+
+
+
+
+
 
 
 //新年的目标：带回来的书看完；https研究下，nginx温习下；docker;oatuh2;
@@ -1085,6 +1097,7 @@ https://blog.csdn.net/tongzidane/article/details/125443140
 ### Ngx_lua模块
 
 - Lua解释器集成进nginx，以实现业务逻辑；Lua内建协程，保证高并发服务能力的同时降低了业务逻辑实现成本
+
 - 模块环境准备
   - lua-nginx-module模块
     - ![image-20240502140351260](Nginx课程学习.assets/image-20240502140351260-4629832.png)
@@ -1095,16 +1108,19 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - OpenRestry
     - http://openrestry.org    基于Nginx于Lua的高性能web平台，能够搭建高并发、扩展性好的 Web应用、Web服务和动态网关
     - ![image-20240502141055596](Nginx课程学习.assets/image-20240502141055596.png)
+  
 - nginx_lua指令
   - 用lua编写nginx脚本以指令为单位，指定指定lua代码的运行时机和结果的使用方法
   - ![image-20240502160807862](Nginx课程学习.assets/image-20240502160807862.png)
   - ![image-20240502161036489](Nginx课程学习.assets/image-20240502161036489.png)
   - ![image-20240502161105272](Nginx课程学习.assets/image-20240502161105272.png)
   - ![image-20240502161122756](Nginx课程学习.assets/image-20240502161122756.png)
+  
 - Ngx_lua使用set_by_lua指令
   - ![image-20240502161207744](Nginx课程学习.assets/image-20240502161207744.png)
   - ![image-20240502161848209](Nginx课程学习.assets/image-20240502161848209.png)
   - ![image-20240502163742025](Nginx课程学习.assets/image-20240502163742025.png)
+  
 -  Ngx_lua操作Redis
   - Nginx支持3中方法访问Redis，分别是HttpRedis模块(适合做简单缓存)、HttpRedis2Module(功能比前一个稍强)、lua-resty-redis（推荐，适合复杂的业务逻辑）
   - ![image-20240502165049574](Nginx课程学习.assets/image-20240502165049574.png)
@@ -1112,20 +1128,47 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - 下面的lcoation少了个/，/testRedis
   - ![image-20240502180245539](Nginx课程学习.assets/image-20240502180245539.png)
   - ![image-20240502180424885](Nginx课程学习.assets/image-20240502180424885.png)
+  
 - ngx_lua操作Mysql
   - 两种访问模式
     - Ngx_lua模块和lua-regsty-mysql模块：这两个模块是安装OpenResty时默认安装的 //适合复杂的业务场景，同时支持存储过程的访问
     - Drizzle_nginx_module(HttpDrizzleModule)模块：需要单独安装，这个库不在OpenResty中
   - ![image-20240502181228279](Nginx课程学习.assets/image-20240502181228279.png)
-  - ![image-20240502181329364](Nginx课程学习.assets/image-20240502181329364.png)
-  - ![image-20240502181432053](Nginx课程学习.assets/image-20240502181432053.png)
-  - ![image-20240502181512617](Nginx课程学习.assets/image-20240502181512617.png)
-  - ![image-20240504111458958](Nginx课程学习.assets/image-20240504111458958.png)
-  - ![image-20240504111539697](Nginx课程学习.assets/image-20240504111539697.png)
-  - ![image-20240504112217560](Nginx课程学习.assets/image-20240504112217560.png)
-  - ![image-20240504111955670](Nginx课程学习.assets/image-20240504111955670.png)
-- 
+    - ![image-20240502181329364](Nginx课程学习.assets/image-20240502181329364.png)
+    - ![image-20240502181432053](Nginx课程学习.assets/image-20240502181432053.png)
+    - ![image-20240502181512617](Nginx课程学习.assets/image-20240502181512617.png)
+    - ![image-20240504111458958](Nginx课程学习.assets/image-20240504111458958.png)
+    - ![image-20240504111539697](Nginx课程学习.assets/image-20240504111539697.png)
+    - ![image-20240504112217560](Nginx课程学习.assets/image-20240504112217560.png)
+    - ![image-20240504111955670](Nginx课程学习.assets/image-20240504111955670.png)
+  
+  - #### lua-resty-mysql查询多条数据 + lua-cjson处理查询结果（有时候不知道表结构）+init_by_lua_block
+  
+    - //lua中 ..是字符串的连接符
+    -  ![image-20240602204503329](Nginx课程学习-photos/image-20240602204503329.png)
+    - ![image-20240602204545732](Nginx课程学习-photos/image-20240602204545732.png)
+    - ![image-20240602204707674](Nginx课程学习-photos/image-20240602204707674.png)
+    - init_by_lua_block ： 每次启动的时候都会执行一次，适合放require这种引入语句
+  
+  - db:query
+  
+    - 是send_query 和 read_result功能的组合
+      - ![image-20240602205648909](Nginx课程学习-photos/image-20240602205648909.png)
+  
+  - 增删改查
+  
+    - ![image-20240602210355623](Nginx课程学习-photos/image-20240602210355623.png)
+  
+- 综合案例：ngx_lua模块完成Redis缓存预热
+  
+  - ![image-20240602211120769](Nginx课程学习-photos/image-20240602211120769.png)
+  - ![image-20240602211253542](Nginx课程学习-photos/image-20240602211253542.png)
+  - ![image-20240602211319218](Nginx课程学习-photos/image-20240602211319218.png)
+  - ![image-20240602211435862](Nginx课程学习-photos/image-20240602211435862.png)
+  - ![image-20240602211649340](Nginx课程学习-photos/image-20240602211649340.png)
+  
 - Tips:
+  
   - tar -zxf ....  -C  targetDirectory  
   - redis连接工具：redis desktop manager
   - 问：redis和lua的结合是如何实现的？？redis的解释器结合了lua的解释器，识别到lua的指令时，使用Lua的解释器。
