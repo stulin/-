@@ -868,23 +868,22 @@ https://blog.csdn.net/tongzidane/article/details/125443140
   - ![image-20240406183051368](Nginx课程学习-photos/image-20240406183051368.png)
 - Nginx URL缓存、状态码缓存流程 
   - ![image-20240406190736856](Nginx课程学习-photos/image-20240406190736856.png)
-  - ![image-20240406190713769](Nginx课程学习-photos/image-20240406190713769.png)
 - Nginx缓存相关指令
-  - proxy_cache_path //注意：只能再http块中配置
+  - proxy_cache_path:设置缓存文件的存放路径 //注意：只能再http块中配置
   - ![image-20240406191735190](Nginx课程学习-photos/image-20240406191735190.png)
   - ![image-20240406192055900](Nginx课程学习-photos/image-20240406192055900.png)
   - ![image-20240406192214943](Nginx课程学习-photos/image-20240406192214943.png)
   - ![image-20240406192440332](Nginx课程学习-photos/image-20240406192440332.png)
-  - proxy_cache：混存钱的名字要和proxy_cache_path中指定的缓存区名称一致
+  - proxy_cache：缓存区的名字要和proxy_cache_path中指定的缓存区名称一致
     - ![image-20240406192931297](Nginx课程学习-photos/image-20240406192931297.png)
-  - proxy_cache_key
+  - proxy_cache_key: web缓存的key值，Nginx根据key值MD5哈希缓存
     - ![image-20240406193130924](Nginx课程学习-photos/image-20240406193130924.png)
-  - proxy_cache_valid //从上到下适配，第一个命中的生效
+  - proxy_cache_valid：对不同的状态码的URL设置不同的缓存时间//从上到下适配，第一个命中的生效
     - ![image-20240406193152903](Nginx课程学习-photos/image-20240406193152903.png)
     - ![image-20240406193600417](Nginx课程学习-photos/image-20240406193600417.png)
-  - proxy_cache_min_uses
+  - proxy_cache_min_uses：设置资源被访问多少次后被缓存
     - ![image-20240406200335347](Nginx课程学习-photos/image-20240406200335347.png)
-  - proxy_cache_methods
+  - proxy_cache_methods：设置缓存哪些HTTP方法
     - ![image-20240406200350156](Nginx课程学习-photos/image-20240406200350156.png)
 - Nginx缓存案例
   - ![image-20240406200517088](Nginx课程学习-photos/image-20240406200517088.png)
