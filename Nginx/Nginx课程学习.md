@@ -7,6 +7,7 @@
 #### ==近期想学的内容==
 
 - 设计模式
+- 找一个大型的项目学习下，经典的数字化转型，银行、金融业最好；
 - F5负载均衡
 - 编码规范
 - docker  k8s
@@ -54,7 +55,6 @@ http  https仔细学习下！！！！很实用啊；
 - 常用命令  ./nginx -t     ./nginx -s reload   //reload之后work进程的pid会变；重启之后master进程的pid会变；
 - nginx速度快、并发高的原因是什么？epoll的底层原理是什么？为什么sendfile配置打开能提升从磁盘读取文件并返回的性能？
   - 使用了epoll，I/O多路复用。
-
 - 简单介绍你对nginx的了解？nginx相比其它web服务器有什么优缺点？
   - nginx是具有高性能  HTTP 和 反向代理 功能的WEB服务器，也是一个 POP3/SMTP/IMAP代理服务器；
   - nginx主要具有：速度快，并发高[多进程和I/O多路复用]，高可靠，轻量级别 等优点 //[配置简单，扩展性好；热部署；成本低 BSD许可]
@@ -82,11 +82,26 @@ http  https仔细学习下！！！！很实用啊；
     - user  user1：配置运行work进程的用户及用户组；例如：按照前面的配置只能访问/home/user1目录的权限 //有点迷糊，例子只配置了用户吧？没有用户组？
     - master process ; worker process (建议和cpu核心数保持一致)
     - 其它：daemon、pid、error_log、include
+- nginx匹配规则，server   location root/alias
+  - nginx如何没有匹配的server，返回结果是什么？
+    - ==default_server==:访问的地址没配置对应的server时会跳转到default server，默认第一个配置的server为default_server；
+  - server_name的匹配规则？
+    - server_name：配置监听的ip/域名，支持==精确匹配>通配符匹配==（通配符在开始时匹配>通配符在结束时匹配；*使用注意，不能在中间；不能前面有字符）==>表达式匹配==（～后面不能加空格；结合（）可以在后面获取正则表达式匹配的内容；），==前三个优先级均大于 默认的default server==；
+  - location的匹配规则？
+    - location //==不带符号==（以指定模式开始，后面可以跟任意字符；匹配上还会向后搜索，搜索到匹配的会使用后面的） =(严格匹配)  ~（正则区分大小写） ~*(正则不区分大小写)  ^~（以指定模式开始，且一旦模式匹配会忽略后面匹配的正则）
+  - root/alias匹配规则？
+    - 可以指定资源路径；root的处理结果是 root路径+location路径  +url中的资源位置；alias的处理结果是alias路径(也可以理解为alias替换了url中 location对应的内容)  +url中的资源位置（所以location后面的路径末尾带/的话，alias末尾也要加/，root无此要求）
+- nginx种sendfile的实现原理？
+  - sendfile：是否开启高效的文件传输模式。       未使用sendfile时访问静态资源流程：nginx应用程序发送read指令给内核区；磁盘拷贝文件--->内核缓冲区---->应用程序缓冲区；nginx应用程序发送write指令给内核区；应用程序缓冲区拷贝文件--->socket缓冲区--->网卡---->发送到浏览器。     使用sendfile时访问静态资源流程：sendfile可以指定最终要交给的socket；可以直接走磁盘-->内核缓冲区-->socket缓冲区--->网卡-->浏览器；少了两次拷贝和  内核态/用户态的切换；//简单来说就是不用再经过应用程序了
+  - 相关指令：==tcp_nopush==：服务端要发送的数据填满缓冲区才发（send file开启时才生效）；   ==tcp_nodelay==：如果有数据就发，实时性好，其中可能大多数是寻址用的数据，有效数据的占比很低，即所谓的效率低（keep alive开启时才生效） 
+    - 2.5.9以后两者可以同时开启，tcp_nopush保证发送数据前缓冲区已填满，提升效率；tcp_nodelay保证最后一个包发送时，即使数据未填满缓冲区也会立刻发送
+  - gzip与sendile的结合：
+    - 使用sendfile之后，静态资源获取就不会经过应用程序（见前文，直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器）；但是==压缩这个操作是要应用程序进行的==。==为了保证senfile和Gzip共存，一般是提前手动把静态资源压缩好（.gz文件）==，保存在磁盘，当gzip生效时就可以直接去找.gz文件
+- gzip相关内容：略；
 - 实际操作流程：正向代理 反向代理
   - 正向代理：客户端配置代理服务器；代理服务器监听指定端口；服务器仅打印日志即可；
   - 反向代理：代理配置监听的端口、服务器域名/ip，转发地址；服务器配置相应的内容；
     - 语法说明：proxy_pass设置代理服务器地址，可以是主机名称、ip附加端口号形式（还要指定传输协议）； proxy_set_header 更改服务器收到的请求头中某个属性的信息； proxy_redirect:适用场景：重定向时依旧能隐藏服务器的ip
-
 - nginx是符合提升web服务器的安全的？
   - 安全隔离：通过代理分开了客户端到应用程序服务端的连接，实现了安全隔离。可以在代理之前设置防火墙，仅留一个入口供代理服务器访问（也就是行里的DMZ区，内网只留了一个DMZ区的入口）。
   - nginx支持https，http是明文传输数据，存在安全问题，https是加密传输，相当于http+ssl
@@ -1143,7 +1158,7 @@ https://blog.csdn.net/tongzidane/article/details/125443140
     - ![image-20240504112217560](Nginx课程学习.assets/image-20240504112217560.png)
     - ![image-20240504111955670](Nginx课程学习.assets/image-20240504111955670.png)
   
-  - #### lua-resty-mysql查询多条数据 + lua-cjson处理查询结果（有时候不知道表结构）+init_by_lua_block
+  - #### lua-resty-mysql查询多条数据 + lua-cjson处理查询结果（适用于不知道表结构的情况）+init_by_lua_block
   
     - //lua中 ..是字符串的连接符
     -  ![image-20240602204503329](Nginx课程学习-photos/image-20240602204503329.png)
