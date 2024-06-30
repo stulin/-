@@ -98,13 +98,51 @@ http  https仔细学习下！！！！很实用啊；
   - gzip与sendile的结合：
     - 使用sendfile之后，静态资源获取就不会经过应用程序（见前文，直接走磁盘-->内核缓冲区-->socket缓冲区-->浏览器）；但是==压缩这个操作是要应用程序进行的==。==为了保证senfile和Gzip共存，一般是提前手动把静态资源压缩好（.gz文件）==，保存在磁盘，当gzip生效时就可以直接去找.gz文件
 - gzip相关内容：略；
+  - 涉及指令：gzip  gzip_tyeps  gzip_comp_level  gzip_vary  gzip_buffers   gzip_disable  gzip_http_version gzip_min_length   gzip_proxied  gzip_static
+  - 小番外：nginx编译增加新的模块
+- web缓存有哪几种方式？各有什么有优缺点？
+  - web缓存是指web资源在web服务器和客户端之间的副本。大致可以分为两类：客户端缓存 和  服务端缓存。   客户端缓存主要包括浏览器缓存，服务端缓存则包括 Nginx  Redis  Memcached 等
+  - 浏览器缓存
+    - 浏览器在用户磁盘上存储最新的请求结果，再次请求时从本次磁盘获取文件
+    - 优点：缓存成本低 减少网络带宽、服务器压力等
+    - 分为强缓存、弱缓存。强缓存指==缓存未过期==直接取浏览器缓存； 弱缓存指==缓存过期==，还需要发请求到服务端确认ETag [请求变量的属性，如md5值等] Last-Modified没有变化，服务端返回一个304[意思时文件没有变化]后才能取浏览器缓存。
+      - F5或者刷新都会使强缓存失效（即有效期会过期），验证强缓存需要新开一个tab（并输入同样的网址），disable cache注意关闭；
+  - //HTTP请求头缓存相关字段：Expires  Cache-Control  Last-Modified ETag
+  - //nginx的add_header指令可以添加指定的响应头和响应值；
+- 什么是跨域问题？nginx如何解决跨域问题？
+  - 两台服务器A、B，如果来自A服务器的前端页面发送请求到B获取数据，且A和B不满足同源策略，则会出现跨域问题。协议  ip  端口都相同即为同源
+  - 解决方案：add_header指令添加相关的头，如Access-Control-Allow-Origin, Access-Control-Allow-Method
+- 什么是资源盗链？如何实现防盗链？
+  - 资源盗链就是静态资源不在自己服务器上，通过技术手段，把别人的资源放到自己的页面上展示给用户。如在自己的页面上引入京东/百度的图片。
+  - 防盗链实现原理：http的头信息referer，告诉浏览器该网页从哪个页面链接跳转过来，后台服务器判断referer是否为自己信任的网站地址，是则继续访问，不是则返回403（服务器拒绝访问）。 相关nginx指令：valid_refers (referer的限制比较粗粒度（一类文件或者是一个目录），比如随意加一个Referer，上面的方式无法限制。需要使用三方模块： ngx_http_accesskey_module)
+- nginx的rewrite指令一般用于什么场景？
+  - 域名跳转：例如让www.360buy.com也重定向到www.jd.com
+  - 域名镜像：和镜像网站类似，完全相同的网站放置到几台服务器上，实现 高可用、分布不同地区以提高响应速度、流量负载、==不同镜像不同域名防止域名限制==。上述的www.itheima.com  www.itheima.cn 都跳转www.itcast.cn，则www.ticast.cn就是主域名，另外两个就是镜像域名。也可以只对一个子目录资源做镜像，可以在location配置rewrite功能。
+  - 独立域名：为每一个功能模块设置独立的域名
+  - 目录自动添加  ”/“：nginx 0.8.48以前server_name_in_redirect的默认开关都是on，==访问url不加斜杆==，Nginx服务器内部会自动做一个301的重定向，目的地址（如果是nginx服务器）会被替换为server_name(nginx监听配置种的server_name)。
+  - 合并目录（搜索引擎优化的常见策略之一）：访问的时候通过名字添加 - 的方式降低目录层级，真正保存的时候一个 - 就是一个目录层级
+  - //涉及的指令：set  if  break  return  rewrite  rewrite_log
 - 实际操作流程：正向代理 反向代理
   - 正向代理：客户端配置代理服务器；代理服务器监听指定端口；服务器仅打印日志即可；
-  - 反向代理：代理配置监听的端口、服务器域名/ip，转发地址；服务器配置相应的内容；
+  - 反向代理：代理配置监听的端口、服务器域名/ip，转发地址；服务器配置相应的资源；
     - 语法说明：proxy_pass设置代理服务器地址，可以是主机名称、ip附加端口号形式（还要指定传输协议）； proxy_set_header 更改服务器收到的请求头中某个属性的信息； proxy_redirect:适用场景：重定向时依旧能隐藏服务器的ip
+  - ==注意区分，地址后面自动加/的事情==：nginx配置中  proxy_pass后面的地址没有/的话，会自动把location后面的uri添加到后面(加了则不会)；  rewrite提到客户访问网址时  末尾不加/，server_name_in_redirect的默认开关都是on，Nginx服务器内部会自动做一个301的重定向
+- nginx反向代理有哪些调优策略？
+  - 缓冲与缓存。    缓冲（proxy_buffering）：客户端不和服务器直接交互，中间多一层缓冲区，缓冲区依次和服务器A（例如A处理快，B处理慢，缓冲区可以再对A B的返回结果做一次重新排序，A就不用一直等） 、B交互。              缓存（proxy_cache_path等）：代理服务器保存一份缓存数据，客户端再次发系统请求时只需要返回代理服务器上的缓存数据接口。
+  - 缓冲相关指令：proxy_buffering     proxy_buffers   proxy_buffer_size    proxy_busy_buffer_size   proxy_temp_path    proxy_temp_file_write_size
+- nginx缓存集成？？
 - nginx是符合提升web服务器的安全的？
   - 安全隔离：通过代理分开了客户端到应用程序服务端的连接，实现了安全隔离。可以在代理之前设置防火墙，仅留一个入口供代理服务器访问（也就是行里的DMZ区，内网只留了一个DMZ区的入口）。
-  - nginx支持https，http是明文传输数据，存在安全问题，https是加密传输，相当于http+ssl
+  - nginx支持https(需要http_ssl_module)，http是明文传输数据，存在安全问题，https是加密传输，相当于http+ssl
+  - //ssl相关指令：ssl_sessin_cache  ssl  ssl_certificate ssl_certificate_key  ssl_session_timeout  ssl_ciphers  ssl_prefer_server_ciphers； 证书可以三方服务购买或者openssl生成；
+
+- 常见的负载均衡策略有哪些？详细说说如何实现Nginx  四层、七层负载均衡指令？
+  - 用户手动选择（如网页上多个下载地址）、 DNS轮询（一个域名映射多个ip，请求轮询访问多个ip）、四层负载均衡（ip+port实现负载均衡，硬件：F5 BIG-IP  Radware等；软件：LVS Nginx[==keepalivied，或stream + upstream使用时只配置到server层，涉及stream模块==] Hayproxy等）、七层负载均衡（基于虚拟的URL或主机IP，软件：Nginx[==upstream使用时只配置到location层==]、Hayproxy等 ）
+  - 常用模式：四层负载lvs + 七层负载Nginx
+  - //==行内支持负载均衡的本质上是四层负载均衡，采用的是F5（在开发人员看来就是 申请虚地址+ 负载均衡策略的配置）， 其实没有F5的话keepalived应该也看i实现类似的效果；  七层负载则自己在nginx中使用upstream配置即可==
+  - //ssl相关指令：upstream  server;  tips: firewall-cmd是Linux提供的专门操作防火墙的工具
+  - nginx七层负载均衡支持的均衡那个策略：轮询（默认，但不同服务器性能不同）、wegiht（但登录学习缓存无法命中）   ip_hash(将某个客户端ip的请求通过哈希算法定位到同一台后端服务器上 )   least_conn(请求转发给连接数较少的服务器)  url_hash（按访问url的hash结果分配请求） fair (依据页面大小、加载时间长短智能进行负载均衡)
+  - 四层和七层负载均衡的区别：四层负载均衡依据ip+端口+设定的规则，要请求转发到对应的ip+端口上，七层则在四层基础上考虑了应用层特征，如七层的URL 浏览器类别等； 
 
 
 ### Nginx简介
